@@ -4,6 +4,7 @@ type user = {
   password: string | null;
   email: string;
   type: string;
+  expense_base: number;
   created_at: string;
   updated_at: string;
   expried_at: string;
@@ -35,4 +36,15 @@ type chat = {
   messages: messages[];
   created_at: string;
   updated_at: string;
+};
+
+type sseConnection = {
+  clientId: string;
+  res: any;
+  token: string;
+};
+
+type message = {
+  role: string;
+  content: string;
 };
