@@ -6,7 +6,8 @@ A ChatGPT web page compatible with Azure OpenAI Key, built using Nuxt3.
 
 This project is currently under development and is not yet available.
 
-![DEMO](https://source.yby.zone/azure-gpt.png)
+![DEMO](https://source.yby.zone/azure-gpt-login.png)
+![DEMO](https://source.yby.zone/azure-gpt-home.png)
 
 # Features
 
