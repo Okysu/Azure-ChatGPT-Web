@@ -1,3 +1,8 @@
+/**
+ * @api {post} /user/login login
+ * @apiName Login icl. auto register.
+ */
+
 import { sha256 } from "js-sha256";
 
 /* login.post.ts */
@@ -40,12 +45,24 @@ export default defineEventHandler(async (event) => {
   const record = await collection.findOne({ email });
 
   if (!record) {
-    res.statusCode = 404;
-    return {
-      code: -1,
-      msg: "user not found.",
-      data: null,
+    // res.statusCode = 404;
+    // return {
+    //   code: -1,
+    //   msg: "user not found.",
+    //   data: null,
+    // };
+
+    // if user not found, use info from params to register a new user
+    const insert_user = {
+      username: username || email,
+      password: hashPassword(password, process.env.HASH_SALT),
+      email,
+      inviteCode: inviteCode,
     };
+
+    // TODO: register user
+
+    return insert_user;
   }
 
   const passwordMatch =
@@ -64,7 +81,7 @@ export default defineEventHandler(async (event) => {
   record.password = sha256(Math.random().toString() + Date.now().toString());
 
   // generate token
-  const token = generateToken("Azure-ChatGPT-Web", record, "15d");
+  const token = generateLoginToken(record);
 
   // save token to redis
   const redis = await getRedis();
@@ -77,7 +94,7 @@ export default defineEventHandler(async (event) => {
     };
   }
 
-  const murmurhash32 = murmurhash(token + "#Yu-GPT-Next-Auth");
+  const murmurhash32 = murmurhash(token + process.env.HASH_SALT);
   set("token:" + murmurhash32, token, 60 * 60 * 24 * 15);
 
   // check if the user is expired or disabled
