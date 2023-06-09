@@ -1,10 +1,24 @@
 // Naive Ui Auto Import
-import Components from 'unplugin-vue-components/vite'
-import { NaiveUiResolver } from 'unplugin-vue-components/resolvers'
+import Components from "unplugin-vue-components/vite";
+import { NaiveUiResolver } from "unplugin-vue-components/resolvers";
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
-  modules: ["@pinia/nuxt", "@pinia-plugin-persistedstate/nuxt"],
+  css: ["~/assets/css/main.css"],
+  app: {
+    head: {
+      title: "Azure ChatGPT Playground",
+    },
+  },
+  modules: [
+    [
+      "@pinia/nuxt",
+      {
+        autoImports: ["defineStore"],
+      },
+    ],
+    "@pinia-plugin-persistedstate/nuxt",
+  ],
   typescript: {
     shim: false,
   },
@@ -22,9 +36,7 @@ export default defineNuxtConfig({
   vite: {
     plugins: [
       Components({
-        resolvers: [
-          NaiveUiResolver()
-        ]
+        resolvers: [NaiveUiResolver()],
       }),
     ],
     optimizeDeps: {

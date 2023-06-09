@@ -1,0 +1,23 @@
+* {
+  padding: 0;
+  margin: 0;
+}
+
+body,
+#app {
+  top: 0;
+  left: 0;
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+}
+
+.n-card-header__main {
+  font-size: 14px !important;
+}
+
+.n-thing-main .n-thing-main__footer:not(:first-child) {
+  margin-top: 5px !important;
+  margin-left: 50px !important;
+}
