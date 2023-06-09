@@ -16,7 +16,7 @@ export default defineEventHandler((event) => {
       const response = {
         code: -1,
         data: null,
-        msg: "Too many requests, please try again later.",
+        msg: "too many requests, please try again later.",
       };
       return response;
     }
