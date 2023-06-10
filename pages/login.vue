@@ -4,12 +4,7 @@
       <n-card>
         <n-grid :cols="isMobile ? 1 : 2">
           <n-gi class="gird-box" v-if="!isMobile">
-            <n-result
-              status="404"
-              title="AI Tools"
-              description="The Azure OpenAI ChatGPT Web"
-              size="huge"
-            >
+            <n-result status="404" title="AI Tools" description="The Azure OpenAI ChatGPT Web" size="huge">
             </n-result>
           </n-gi>
           <n-gi class="gird-box">
@@ -17,75 +12,33 @@
               <n-alert type="warning">
                 此为预览站，仅技术预览和学习使用，不保证账户或记录的永久性，违反国内法律使用会被监管并在不主动通知下清除内容或帐号。
               </n-alert>
-              <n-tabs
-                v-model:value="nowTabValue"
-                size="large"
-                style="margin-top: 16px"
-                @update:value="emptyForm()"
-              >
+              <n-tabs v-model:value="nowTabValue" size="large" style="margin-top: 16px" @update:value="emptyForm()">
                 <n-tab-pane name="login" tab="登录" />
                 <n-tab-pane name="register" tab="注册" />
               </n-tabs>
               <n-form ref="form" :model="formValue" :rules="formRule">
                 <n-form-item path="email">
-                  <n-input
-                    v-model:value="formValue.email"
-                    type="text"
-                    placeholder="邮箱"
-                  />
+                  <n-input v-model:value="formValue.email" type="text" placeholder="邮箱" />
                 </n-form-item>
                 <n-form-item path="password">
-                  <n-input
-                    v-model:value="formValue.password"
-                    type="password"
-                    placeholder="密码"
-                    show-password-on="click"
-                  />
+                  <n-input v-model:value="formValue.password" type="password" placeholder="密码" show-password-on="click" />
                 </n-form-item>
                 <n-form-item path="codeCheck">
-                  <n-input
-                    v-model:value="formValue.codeCheck"
-                    type="text"
-                    placeholder="验证码"
-                  />
-                  <canvas
-                    ref="code"
-                    @click="valid.draw"
-                    height="34"
-                    width="120"
-                  ></canvas>
+                  <n-input v-model:value="formValue.codeCheck" type="text" placeholder="验证码" />
+                  <canvas ref="code" @click="valid.draw" height="34" width="120"></canvas>
                 </n-form-item>
-                <n-form-item
-                  v-if="nowTabValue === 'register'"
-                  path="inviteCode"
-                >
-                  <n-input
-                    :disabled="isInvited"
-                    v-model:value="formValue.inviteCode"
-                    type="text"
-                    placeholder="邀请码，没有可不填"
-                  />
+                <n-form-item v-if="nowTabValue === 'register'" path="inviteCode">
+                  <n-input :disabled="isInvited" v-model:value="formValue.inviteCode" type="text"
+                    placeholder="邀请码，没有可不填" />
                 </n-form-item>
-                <n-button
-                  block
-                  type="primary"
-                  @click="formHandler"
-                  :loading="formValue.loading"
-                  >登录/注册</n-button
-                >
-                <span class="license"
-                  >登录前我们默认你已知晓并同意
+                <n-button block type="primary" @click="formHandler" :loading="formValue.loading">登录/注册</n-button>
+                <span class="license">登录前我们默认你已知晓并同意
                   <a href="/license.html" target="_blank">《服务条款》</a>
                 </span>
               </n-form>
               <template #footer>
                 <div class="footer-tools">
-                  <n-select
-                    style="width: 100px"
-                    v-model:value="theme"
-                    size="small"
-                    :options="themeOptions"
-                  />
+                  <n-select style="width: 100px" v-model:value="theme" size="small" :options="themeOptions" />
                   <a href="/forget" target="_blank">忘记密码?</a>
                 </div>
               </template>
@@ -103,7 +56,7 @@ import { useAppConfig } from "~/stores/appConfig";
 import { useUserConfig } from "~/stores/userConfig";
 import { storeToRefs } from "pinia";
 import { FormInst, FormItemRule } from "naive-ui";
-import { Response, request } from "~/api";
+import { Response, login, request } from "~/api";
 
 // route & router
 const route = useRoute();
@@ -212,13 +165,13 @@ const formHandler = (e: Event) => {
 
     // submit
     formValue.value.loading = true;
-    request
-      .post("/api/user/login", {
-        username: formValue.value.email,
-        email: formValue.value.email,
-        password: formValue.value.password,
-        inviteCode: formValue.value.inviteCode,
-      })
+
+    // NOTE: Do not pass parameters directly using formValue.value, as it can lead to overflow.
+    const data = {
+      ...formValue.value
+    }
+
+    login(data)
       .then((res) => {
         const { code, data, msg } = res.data.value as Response<any>;
         if (code === -1) {
@@ -294,7 +247,7 @@ useHead({
   margin-top: 20px;
 }
 
-.login > .n-card {
+.login>.n-card {
   --n-padding-top: 0;
   --n-padding-bottom: 0;
   --n-padding-left: 0;

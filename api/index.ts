@@ -91,7 +91,7 @@ export const request = {
   },
 };
 
-export const login = (): Boolean => {
+export const islogin = (): Boolean => {
   if (!userConfig) userConfig = useUserConfig();
   return userConfig && userConfig.login;
 };
@@ -100,3 +100,5 @@ export const logout = (): void => {
   if (!userConfig) userConfig = useUserConfig();
   userConfig.logout();
 };
+
+export { login } from "./user";

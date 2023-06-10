@@ -1,9 +1,10 @@
+const auth = ["auth", "model", "logout"];
 export default defineEventHandler(async (event) => {
   // if url has auth, need to check permission
   const req = event.node.req;
   const res = event.node.res;
   const url = req.url || "";
-  if (url.startsWith("/api") && url.includes("auth")) {
+  if (url.startsWith("/api") && auth.some((item) => url.includes(item))) {
     const { authorization } = req.headers;
     if (!authorization) {
       res.statusCode = 401;

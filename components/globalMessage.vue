@@ -6,10 +6,12 @@ import {
   useNotification,
 } from "naive-ui";
 onMounted(() => {
-  window.$loadingbar = useLoadingBar();
-  window.$dialog = useDialog();
-  window.$message = useMessage();
-  window.$notify = useNotification();
+  if (process.client) {
+    window.$loadingbar = useLoadingBar();
+    window.$dialog = useDialog();
+    window.$message = useMessage();
+    window.$notify = useNotification();
+  }
 });
 </script>
 
