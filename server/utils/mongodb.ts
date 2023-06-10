@@ -1,6 +1,15 @@
 import { MongoClient, Db } from "mongodb";
 
-const uri = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017";
+const uri = process.env.MONGODB_URI;
+const password = process.env.MONGODB_PASSWORD;
+const username = process.env.MONGODB_USERNAME;
+const db_name = process.env.MONGODB_DB;
+
+if (!uri || !password || !username || !db_name) {
+  throw new Error(
+    "MONGODB_URI, MONGODB_PASSWORD, MONGODB_USERNAME, or MONGODB_DB not found in env."
+  );
+}
 
 let db: Db | null = null;
 
@@ -9,10 +18,10 @@ let db: Db | null = null;
  */
 async function connect() {
   try {
-    const client = await MongoClient.connect(uri, {
+    const client = await MongoClient.connect(uri!, {
       auth: {
-        username: process.env.MONGODB_USERNAME || "",
-        password: process.env.MONGODB_PASSWORD || "",
+        username: process.env.MONGODB_USERNAME!,
+        password: process.env.MONGODB_PASSWORD!,
       },
     });
     db = client.db(process.env.MONGODB_DB);

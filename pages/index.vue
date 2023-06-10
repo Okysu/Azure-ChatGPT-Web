@@ -1,4 +1,5 @@
 <template>
+  <div>
   <n-layout style="height: 100vh" has-sider>
     <n-layout-sider content-style="padding: 16px" bordered show-trigger collapse-mode="width" :collapsed-width="0"
       :width="264" :native-scrollbar="false" v-model:collapsed="collapsed" @contextmenu.prevent="">
@@ -169,6 +170,7 @@
       </n-layout-footer>
     </n-layout>
   </n-layout>
+  </div>
 </template>
 
 <script setup lang="ts">

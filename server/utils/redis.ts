@@ -2,14 +2,22 @@ import { RedisClientType, createClient } from "redis";
 
 let client: any = null;
 
+const url = process.env.REDIS_URL;
+const password = process.env.REDIS_PASSWORD;
+const database = Number(process.env.REDIS_DATABASE);
+
+if (!url || !password || !database) {
+  throw new Error("REDIS_URL, REDIS_PASSWORD or REDIS_DATABASE not found in env.");
+}
+
 /**
  * Connect to the redis server.
  */
 async function connect() {
   const redisClient = createClient({
-    password: process.env.REDIS_PASSWORD,
-    database: Number(process.env.REDIS_DATABASE),
-    url: process.env.REDIS_URL,
+    password: password,
+    database: database,
+    url: url,
   });
 
   await redisClient
