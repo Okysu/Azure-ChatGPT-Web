@@ -1,4 +1,4 @@
-import { islogin as login, logout } from "~/api";
+import { islogin as login, clear } from "~/api";
 
 export default defineNuxtPlugin((nuxtApp) => {
   addRouteMiddleware(
@@ -8,7 +8,7 @@ export default defineNuxtPlugin((nuxtApp) => {
         const router = useRouter();
         if (to.path !== "/login" && !login()) {
           abortNavigation();
-          logout();
+          clear();
           router.push("/login");
         }
         if (to.path === "/login" && login()) {

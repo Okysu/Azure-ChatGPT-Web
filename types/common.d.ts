@@ -1,13 +1,13 @@
 type user = {
-  id: number;
+  _id: string;
   username: string;
   password: string | null;
   email: string;
   type: string;
   expense_base: number;
-  created_at: string;
-  updated_at: string;
-  expried_at: string;
+  created_at: Date;
+  updated_at: Date;
+  expried_at: Date;
   disabled_flag: boolean;
 };
 
@@ -20,22 +20,22 @@ type options = {
 };
 
 type messages = {
-  id?: string;
+  _id?: string;
   role: string;
   content: string;
-  created_at?: string;
-  updated_at?: string;
+  created_at?: Date;
+  updated_at?: Date;
   choose_flag?: boolean;
 };
 
 type chat = {
-  id: number;
-  uid: number;
+  _id?: string;
   title: string;
   type: string; // chat or image
   messages: messages[];
-  created_at: string;
-  updated_at: string;
+  created_by?: string;
+  created_at?: Date;
+  updated_at?: Date;
 };
 
 type sseConnection = {

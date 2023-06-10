@@ -1,4 +1,4 @@
-const auth = ["auth", "model", "logout"];
+const auth = ["auth", "model", "logout", "chat"];
 export default defineEventHandler(async (event) => {
   // if url has auth, need to check permission
   const req = event.node.req;
@@ -35,7 +35,7 @@ export default defineEventHandler(async (event) => {
     // get redis value
     const murmurhash32 = murmurhash(token + process.env.HASH_SALT);
     const record = await get("token:" + murmurhash32);
-
+    console.log(record);
     if (!record) {
       res.statusCode = 401;
       return {

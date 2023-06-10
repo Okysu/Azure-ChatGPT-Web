@@ -46,8 +46,8 @@ const fetch = <T>(url: UrlType, option: UseFetchOptions<Response<T>>) => {
       }
       // get method params serializer
       options.params = paramsSerializer(options.params);
-      // when mothod is get, add params "t" to avoid cache
-      if (options.method?.toLocaleUpperCase() === "GET") {
+      // when method is get, add params "t" to avoid cache
+      if (options.method?.toUpperCase() === "GET") {
         options.params = options.params ?? {};
         options.params.t = Date.now();
       }
@@ -96,9 +96,10 @@ export const islogin = (): Boolean => {
   return userConfig && userConfig.login;
 };
 
-export const logout = (): void => {
+export const clear = (): void => {
   if (!userConfig) userConfig = useUserConfig();
-  userConfig.logout();
+  userConfig.clear();
 };
 
-export { login } from "./user";
+export { login, logout } from "./user";
+export { getChatList, insertChat, deleteChat, updateChat } from "./chat";

@@ -1,3 +1,4 @@
+import { sha256 } from "js-sha256";
 import { ObjectId } from "mongodb";
 import { v4 as uuidv4 } from "uuid";
 export default defineEventHandler(async (event) => {
@@ -13,7 +14,16 @@ export default defineEventHandler(async (event) => {
     };
   }
 
-  const { messages } = body;
+  const { messages, type } = body;
+
+  if (!messages || !Array.isArray(messages) || !type) {
+    res.statusCode = 400;
+    return {
+      code: -1,
+      msg: "params error.",
+      data: null,
+    };
+  }
 
   const { _id } = user;
   const db = await getDB();
@@ -26,7 +36,7 @@ export default defineEventHandler(async (event) => {
     };
   }
   const collection = db.collection("chat");
-  const uuid = new ObjectId(uuidv4());
+  const uuid = new ObjectId(sha256(uuidv4()));
   // create chat
   await collection.insertOne({
     _id: uuid,
@@ -35,6 +45,16 @@ export default defineEventHandler(async (event) => {
     updated_at: new Date(),
     del_flag: false,
     messages: messages,
-    title: "新的聊天",
+    title: "New Chat",
+    type: type,
   });
+
+  res.statusCode = 200;
+  return {
+    code: 0,
+    msg: "success.",
+    data: {
+      _id: uuid,
+    },
+  };
 });
