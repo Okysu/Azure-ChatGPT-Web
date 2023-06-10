@@ -92,5 +92,11 @@ export const request = {
 };
 
 export const login = (): Boolean => {
+  if (!userConfig) userConfig = useUserConfig();
   return userConfig && userConfig.login;
+};
+
+export const logout = (): void => {
+  if (!userConfig) userConfig = useUserConfig();
+  userConfig.logout();
 };
