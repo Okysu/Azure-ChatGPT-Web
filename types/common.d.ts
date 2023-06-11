@@ -40,8 +40,10 @@ type chat = {
 
 type sseConnection = {
   clientId: string;
-  res: any;
+  messages: message[];
+  options: options;
   token: string;
+  name: string;
 };
 
 type message = {

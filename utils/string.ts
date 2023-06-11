@@ -1,4 +1,5 @@
 export const safeHtml = (html: string, strict?: boolean): string => {
+  if (!html) return html;
   // del script tag
   const value = html.replace(/<script[^>]*?>[\s\S]*?<\/script>/g, "");
   // if strict mode, del all html tag
@@ -45,3 +46,15 @@ export const getMatchingTextColor = (color: Color | string): string => {
   const brightness = (r * 299 + g * 587 + b * 114) / 1000;
   return brightness > 128 ? "#000000" : "#ffffff";
 };
+
+export function cutTitle(title: string): string {
+  const punctuations = [",", "，", ".", "。", "!", "！"];
+  let endIndex = title.length;
+  for (let i = 0; i < title.length; i++) {
+    if (punctuations.includes(title[i])) {
+      endIndex = i;
+      break;
+    }
+  }
+  return endIndex > 8 ? title.slice(0, 8) : title.slice(0, endIndex);
+}

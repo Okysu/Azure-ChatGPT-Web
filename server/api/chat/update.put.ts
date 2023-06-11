@@ -1,3 +1,5 @@
+import { ObjectId } from "mongodb";
+
 export default defineEventHandler(async (event) => {
   const { user } = event.context.auth;
   const { res } = event.node;
@@ -28,7 +30,7 @@ export default defineEventHandler(async (event) => {
   if (!messages || !Array.isArray(messages)) {
     // just update title
     await collection.updateOne(
-      { _id: _id, created_by: _uid },
+      { _id: new ObjectId(_id), created_by: _uid },
       {
         $set: {
           title: title || "New Chat",
@@ -39,10 +41,10 @@ export default defineEventHandler(async (event) => {
   } else if (!title) {
     // just update messages
     await collection.updateOne(
-      { _id: _id, created_by: _uid },
+      { _id: new ObjectId(_id), created_by: _uid },
       {
         $set: {
-          messages: messages,
+          messages: JSON.stringify(messages),
           updated_at: new Date(),
         },
       }
@@ -50,10 +52,10 @@ export default defineEventHandler(async (event) => {
   } else {
     // update both
     await collection.updateOne(
-      { _id: _id, created_by: _uid },
+      { _id: new ObjectId(_id), created_by: _uid },
       {
         $set: {
-          messages: messages,
+          messages: JSON.stringify(messages),
           title: title || "New Chat",
           updated_at: new Date(),
         },

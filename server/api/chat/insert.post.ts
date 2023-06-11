@@ -1,6 +1,5 @@
-import { sha256 } from "js-sha256";
 import { ObjectId } from "mongodb";
-import { v4 as uuidv4 } from "uuid";
+
 export default defineEventHandler(async (event) => {
   const { user } = event.context.auth;
   const { res } = event.node;
@@ -36,15 +35,15 @@ export default defineEventHandler(async (event) => {
     };
   }
   const collection = db.collection("chat");
-  const uuid = new ObjectId(sha256(uuidv4()));
+  const objectId = new ObjectId();
   // create chat
   await collection.insertOne({
-    _id: uuid,
+    _id: objectId,
     created_by: _id,
     created_at: new Date(),
     updated_at: new Date(),
     del_flag: false,
-    messages: messages,
+    messages: JSON.stringify(messages),
     title: "New Chat",
     type: type,
   });
@@ -54,7 +53,7 @@ export default defineEventHandler(async (event) => {
     code: 0,
     msg: "success.",
     data: {
-      _id: uuid,
+      _id: objectId,
     },
   };
 });

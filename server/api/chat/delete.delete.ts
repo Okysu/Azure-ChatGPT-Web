@@ -1,3 +1,5 @@
+import { ObjectId } from "mongodb";
+
 export default defineEventHandler(async (event) => {
   const { user } = event.context.auth;
   const { res } = event.node;
@@ -27,7 +29,7 @@ export default defineEventHandler(async (event) => {
 
   // delete chat but set del_flag to true
   await collection.updateOne(
-    { _id: _id, created_by: _uid },
+    { _id: new ObjectId(_id), created_by: _uid },
     {
       $set: {
         del_flag: true,

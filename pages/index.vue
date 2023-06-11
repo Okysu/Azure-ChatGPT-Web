@@ -14,7 +14,7 @@
       >
         <n-layout-header bordered style="width: 240px">
           <div style="display: flex; gap: 4px">
-            <n-input placeholder="搜索">
+            <n-input placeholder="搜索" v-model:value="filterValue">
               <template #prefix>
                 <n-icon :component="SearchOutline" />
               </template>
@@ -24,7 +24,7 @@
               strong
               secondary
               type="primary"
-              @click="nowChat = null"
+              @click="createNewChat"
             >
               <template #icon>
                 <n-icon :component="AddOutline" />
@@ -35,10 +35,11 @@
         <n-layout-content>
           <div class="message-list">
             <n-card
-              v-for="list in chatList"
+              v-for="list in chatListFilter"
               :title="list.title"
               size="small"
-              :class="[list._id === nowChat!._id ? 'active' : '']"
+              :class="[list._id === nowChat?._id ? 'active' : '']"
+              @click="changeNowChat(list)"
             >
               <template #header-extra>
                 <n-button-group size="tiny">
@@ -49,7 +50,13 @@
                       </n-icon>
                     </template>
                   </n-button>
-                  <n-button strong secondary circle type="error">
+                  <n-button
+                    strong
+                    secondary
+                    circle
+                    type="error"
+                    @click="deleteNowChat(list._id!)"
+                  >
                     <template #icon>
                       <n-icon>
                         <TrashBinOutline />
@@ -95,6 +102,7 @@
       </n-layout-sider>
       <n-layout>
         <n-layout-header
+          v-if="nowChat"
           style="
             padding: 15px;
             display: flex;
@@ -124,15 +132,22 @@
                 text-overflow: ellipsis;
                 white-space: nowrap;
               "
-              >新的聊天</span
+              >{{ nowChatTitle }}</span
             >
           </div>
           <div>
-            <n-button-group size="small">
-              <n-button ghost circle>
+            <n-button-group v-if="nowChatSaveFlag" size="small">
+              <n-button ghost circle @click="setNowChatTitle">
                 <template #icon>
                   <n-icon>
                     <PencilOutline />
+                  </n-icon>
+                </template>
+              </n-button>
+              <n-button ghost circle>
+                <template #icon>
+                  <n-icon>
+                    <BulbOutline />
                   </n-icon>
                 </template>
               </n-button>
@@ -170,7 +185,10 @@
                 </template>
               </n-result>
             </div>
-            <n-thing v-else v-for="list in nowChat.messages">
+            <n-thing
+              v-else
+              v-for="list in nowChat.messages.filter((e) => e.choose_flag)"
+            >
               <template #avatar>
                 <n-avatar
                   v-if="list.role === 'user'"
@@ -183,12 +201,12 @@
                     backgroundColor: colorToHex(color),
                   }"
                 >
-                  {{ user.username.slice(0, 2).toLocaleUpperCase() }}
+                  {{ list.role.slice(0, 2).toLocaleUpperCase() }}
                 </n-avatar>
               </template>
               <template #header>
                 <span class="time">{{
-                  list.created_at!.toLocaleString()
+                  new Date(list.created_at!).toLocaleString()
                 }}</span>
               </template>
               <template #description>
@@ -210,7 +228,12 @@
                       </n-icon>
                     </template>
                   </n-button>
-                  <n-button strong secondary circle>
+                  <n-button
+                    strong
+                    secondary
+                    circle
+                    @click="deleteMessage(list._id!)"
+                  >
                     <template #icon>
                       <n-icon>
                         <TrashBinOutline />
@@ -234,39 +257,16 @@
           "
         >
           <n-button-group size="small" style="margin-bottom: 10px">
-            <n-button>
-              <template #icon>
-                <n-icon>
-                  <BulbOutline />
-                </n-icon>
-              </template>
-              模型
-            </n-button>
-            <n-button>
-              <template #icon>
-                <n-icon>
-                  <BookOutline />
-                </n-icon>
-              </template>
-              历史消息
-            </n-button>
-            <n-button>
-              <template #icon>
-                <n-icon>
-                  <HandLeftOutline />
-                </n-icon>
-              </template>
-              <n-checkbox> 单轮对话 </n-checkbox>
-            </n-button>
           </n-button-group>
           <n-input
-            @keydown.enter.native=""
+            v-model:value="promptValue"
+            @keydown.enter.native="quickSend"
             autosize
             style="min-height: 100px"
             type="textarea"
             placeholder="开始你的对话..."
           />
-          <n-button type="primary" class="fab-btn">
+          <n-button type="primary" class="fab-btn" @click="sendMessages">
             <n-icon>
               <PaperPlaneOutline />
             </n-icon>
@@ -291,6 +291,8 @@ import {
   updateChat,
   deleteChat,
   insertChat,
+  startNewModelChat,
+  getModelStream,
 } from "~/api";
 
 // icons
@@ -311,10 +313,14 @@ import {
   MenuOutline,
 } from "@vicons/ionicons5";
 
+// route
+const route = useRoute();
+const nowChatId = route.query.chat;
+
 // refs reactive
 const appConfig = useAppConfig();
 const userConfig = useUserConfig();
-const { isMobile, collapsed } = storeToRefs(appConfig);
+const { collapsed } = storeToRefs(appConfig);
 const { user } = storeToRefs(userConfig);
 
 // avatar color
@@ -323,13 +329,245 @@ const color = randomColor();
 // chat list
 const chatList = ref<chat[]>([]);
 
+const filterValue = ref<string>("");
+const chatListFilter = computed(() => {
+  if (!filterValue.value.trim()) return chatList.value;
+  return chatList.value.filter(
+    (item) =>
+      item.title.includes(filterValue.value) ||
+      item.messages.some((message) =>
+        message.content.includes(filterValue.value)
+      )
+  );
+});
+
+// createNewChat
+const createNewChat = () => {
+  nowChat.value = null;
+  nowChatSaveFlag.value = false;
+  history.pushState(null, "", "/");
+};
+
 // now chat
 const nowChat = ref<chat | null>(null);
+const nowChatSaveFlag = ref<boolean>(false);
+
+// nowChatTitle
+const nowChatTitle = computed(() => {
+  if (nowChat.value === null) return "New Chat";
+  return nowChat.value.title;
+});
+
+// changeNowChat
+const changeNowChat = (chat: chat) => {
+  nowChat.value = chat;
+  nowChatSaveFlag.value = true;
+  history.pushState(null, "", "/?chat=" + chat._id);
+};
+
+// setNowChatTitle
+const setNowChatTitle = () => {
+  const title = prompt("请输入新的对话标题", nowChat.value!.title);
+  if (title) {
+    nowChat.value!.title = title;
+  }
+};
+
+// sendMessages
+const promptValue = ref<string>("");
+const sendMessages = () => {
+  const value = promptValue.value;
+  if (value.trim() === "") {
+    window.$message.error("请输入内容");
+    return;
+  }
+  nowChatSaveFlag.value =
+    nowChat.value!.messages.filter((item) => item.role === "user").length > 0;
+  const newMessage = {
+    _id: uuidv4(),
+    role: "user",
+    content: value,
+    created_at: new Date(),
+    choose_flag: true,
+  } as messages;
+  nowChat.value!.messages.push(newMessage);
+  promptValue.value = "";
+  // copy message
+  const messages = nowChat.value!.messages.map((item) => {
+    return {
+      _id: item._id,
+      role: item.role,
+      content: item.content,
+      created_at: item.created_at,
+      choose_flag: item.choose_flag,
+      updated_at: item.updated_at,
+    };
+  });
+  if (nowChatSaveFlag.value) {
+    updateChat({
+      _id: nowChat.value!._id!,
+      messages: messages,
+    }).then((res) => {
+      const { code } = res.data.value as Response<any>;
+      if (code !== 0) {
+        window.$message.error("消息保存失败，可能会导致无法漫游");
+      }
+    });
+  } else {
+    insertChat({
+      type: nowChat.value!.type as "chat" | "image",
+      messages: messages,
+    }).then((res) => {
+      const { code, data } = res.data.value as Response<any>;
+      if (code === 0) {
+        nowChat.value!._id = data._id;
+        history.pushState(null, "", "/?chat=" + data._id);
+      } else {
+        window.$message.error("消息保存失败，可能会导致无法漫游");
+      }
+    });
+  }
+  getChatLists(false);
+
+  const filter = messages
+    .filter((e) => e.choose_flag)
+    .map((e) => {
+      return {
+        role: e.role,
+        content: e.content,
+      };
+    });
+  startNewModelChat({
+    name: "gpt-35-turbo",
+    messages: filter!,
+  }).then((res) => {
+    const { code, data } = res.data.value as Response<any>;
+    if (code === 0) {
+      const replyMessage = {
+        _id: data._id,
+        role: "assistant",
+        content: "正在思考中...",
+        choose: true,
+        created_at: new Date(),
+        choose_flag: true,
+      } as messages;
+
+      nowChat.value!.messages.push(replyMessage);
+      const reference = nowChat.value!.messages.find(
+        (item) => item._id === data._id
+      );
+      console.log(reference);
+      // copy message
+      let messages = nowChat.value!.messages.map((item) => {
+        return {
+          _id: item._id,
+          role: item.role,
+          content: item.content,
+          created_at: item.created_at,
+          choose_flag: item.choose_flag,
+          updated_at: item.updated_at,
+        };
+      });
+      getModelStream(data._id)
+        .then((res) => {
+          if (!res.body) return;
+          const reader = res.body.getReader();
+          const decoder = new TextDecoder("utf-8");
+          let result = "";
+
+          async function readStream(): Promise<any> {
+            const { done, value } = await reader.read();
+            if (done) {
+              messages = nowChat.value!.messages.map((item) => {
+                return {
+                  _id: item._id,
+                  role: item.role,
+                  content: item.content,
+                  created_at: item.created_at,
+                  choose_flag: item.choose_flag,
+                  updated_at: item.updated_at,
+                };
+              });
+              return result;
+            }
+            const chunk = decoder.decode(value, { stream: true });
+            result += chunk;
+            if (reference) {
+              reference.content = result;
+            }
+            return readStream();
+          }
+          return readStream();
+        })
+        .then((res) => {
+          reference!.created_at = new Date();
+          if (nowChatSaveFlag.value) {
+            updateChat({
+              _id: nowChat.value!._id!,
+              messages: messages,
+            }).then((res) => {
+              const { code } = res.data.value as Response<any>;
+              if (code !== 0) {
+                window.$message.error("消息保存失败，可能会导致无法漫游");
+              } else {
+                nowChatSaveFlag.value = true;
+                getChatLists(false);
+              }
+            });
+          } else {
+            const title = cutTitle(res!);
+            updateChat({
+              _id: nowChat.value!._id!,
+              title: title,
+              messages: messages,
+            }).then((res) => {
+              const { code } = res.data.value as Response<any>;
+              if (code !== 0) {
+                window.$message.error("消息保存失败，可能会导致无法漫游");
+              } else {
+                nowChatSaveFlag.value = true;
+                nowChat.value!.title = title;
+                getChatLists(false);
+              }
+            });
+          }
+        });
+    } else {
+      window.$message.error("模型启动失败");
+    }
+  });
+};
+
+// deleteMessage
+const deleteMessage = (_id: string) => {
+  const message = nowChat.value!.messages.find((e) => e._id === _id);
+  if (message) {
+    window.$dialog.warning({
+      title: "删除消息",
+      content:
+        "确定要删除这条消息吗？但在历史记录里面仍然可以看到这条消息，您仍然可以再次选中它！",
+      positiveText: "确定",
+      negativeText: "取消",
+      transformOrigin: "center",
+      onPositiveClick: async () => {
+        message.choose_flag = false;
+      },
+    });
+  }
+};
+
+const quickSend = (e: KeyboardEvent) => {
+  // ctrl + enter send message
+  if (e.ctrlKey && e.key === "Enter") {
+    sendMessages();
+  }
+};
 
 // getChatList
-const getChatLists = () => {
+const getChatLists = async (needNow: boolean = true) => {
+  await nextTick();
   getChatList().then((res) => {
-    const { code, data, msg } = res.data.value as Response<any>;
+    const { code, data } = res.data.value as Response<any>;
     if (code === 0) {
       // if data is array , set chatList
       if (Array.isArray(data)) {
@@ -337,12 +575,47 @@ const getChatLists = () => {
           item.messages = JSON.parse(item.messages as string);
         });
         chatList.value = data;
+        if (nowChatId && needNow) {
+          const chat = data.find((e) => e._id === nowChatId);
+          if (chat) {
+            nowChat.value = chat;
+          } else {
+            createNewChat();
+          }
+        }
       } else {
         window.$message.error("获取历史记录失败，请重试");
       }
     } else {
       window.$message.error("获取历史记录失败，请重试");
     }
+  });
+};
+
+// delete chat
+const deleteNowChat = (_id: string) => {
+  window.$dialog.warning({
+    title: "删除会话记录",
+    content: "确定要删除这条会话记录吗？请注意这是不可逆的操作！",
+    positiveText: "确定",
+    negativeText: "取消",
+    transformOrigin: "center",
+    onPositiveClick: async () => {
+      deleteChat({
+        _id,
+      }).then((res) => {
+        const { code } = res.data.value as Response<any>;
+        if (code === 0) {
+          window.$message.success("删除会话记录成功");
+          if (nowChat.value?._id === _id) {
+            createNewChat();
+          }
+          getChatLists(false);
+        } else {
+          window.$message.error("删除会话记录失败，请重新再试");
+        }
+      });
+    },
   });
 };
 
@@ -356,7 +629,6 @@ const startNewChat = (type: string) => {
 };
 
 onMounted(async () => {
-  // history.pushState(null, "", '/?chat=1');
   getChatLists();
 });
 

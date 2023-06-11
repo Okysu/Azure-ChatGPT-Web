@@ -1,39 +1,29 @@
 const supportedModels = process.env.SUPPORT_MODEL?.split(",") || [];
 import { v4 as uuidv4 } from "uuid";
-import OpenAIClient from "../../utils/openai";
 import { encode } from "gpt-3-encoder";
 
 /* SSE Connections Endpoint */
 export const activeConnections = [] as sseConnection[];
 
 /**
- * Send SSE message to client.
- * @param {string} clientId
- * @param {any} message
- */
-function sendSSEMessage(clientId: string, message: string) {
-  const connection = activeConnections.find(
-    (item) => item.clientId === clientId
-  );
-  if (connection && connection.res && message) {
-    const response = `${message}`;
-    connection.res.write(response);
-    console.log("send message to client: " + clientId, message);
-  }
-}
-
-/**
  * Generate a client id.
  * @param {string} token
  * @returns {string} client id
  */
-function generateClientId(token: string): string {
+function generateClientId(
+  token: string,
+  messages: message[],
+  options: options,
+  name: string
+): string {
   const clientId = uuidv4();
   console.log("generate client id: " + clientId);
   activeConnections.push({
+    name,
     clientId,
-    res: null,
     token,
+    messages,
+    options,
   });
   console.log("active connections: " + activeConnections.length);
   return clientId;
@@ -48,8 +38,6 @@ export function closeSSEConnection(clientId: string) {
     (item) => item.clientId === clientId
   );
   if (index !== -1) {
-    const connection = activeConnections[index];
-    connection.res.end();
     activeConnections.splice(index, 1);
     console.log("close connection: " + clientId);
   }
@@ -146,46 +134,14 @@ export default defineEventHandler(async (event) => {
     };
   }
 
-  const asyncResult = OpenAIClient.listChatCompletions(
-    name,
-    messages,
-    options || defaultOptions
-  );
-  const result = await asyncResult;
-  // Stream the result to the client
-  const clientId = generateClientId(token);
-
-  async function processResult() {
-    for await (const stream of result) {
-      if (!stream.choices[0].delta) {
-        closeSSEConnection(clientId);
-        return {
-          code: -1,
-          msg: "model error.",
-          data: null,
-        };
-      }
-      const { role, content } = stream.choices[0].delta;
-      if (role === undefined && content === undefined) {
-        // close SSE connection
-        closeSSEConnection(clientId);
-        res.end();
-        break;
-      } else if (content !== undefined) {
-        // send SSE message
-        sendSSEMessage(clientId, content);
-      }
-    }
-  }
-
-  processResult();
+  const clientId = generateClientId(token, messages, options || defaultOptions, name);
 
   res.statusCode = 200;
   return {
     code: 0,
     msg: "success.",
     data: {
-      clientId,
+      _id: clientId,
     },
   };
 });

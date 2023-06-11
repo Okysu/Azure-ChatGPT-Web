@@ -11,7 +11,7 @@ export default defineEventHandler((event) => {
   if (url.startsWith("/api")) {
     const hashIP = murmurhash(ip.toString() + "#rate-limit").toString();
     let count = ipConnections.get(hashIP) || 0;
-    if (count > 15) {
+    if (count > 60) {
       event.node.res.statusCode = 429;
       const response = {
         code: -1,

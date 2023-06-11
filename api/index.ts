@@ -40,6 +40,7 @@ const fetch = <T>(url: UrlType, option: UseFetchOptions<Response<T>>) => {
   return useFetch<Response<T>>(url, {
     // before request
     onRequest({ options }) {
+      window.$loadingbar.start();
       // get user config
       if (process.client && !userConfig) {
         userConfig = useUserConfig();
@@ -64,8 +65,12 @@ const fetch = <T>(url: UrlType, option: UseFetchOptions<Response<T>>) => {
       options.headers = new Headers(options.headers);
       options.headers.set("Authorization", `Bearer ${userConfig.token}`);
     },
+    onResponse() {
+      window.$loadingbar.finish();
+    },
     onResponseError({ response }) {
       console.error(response);
+      window.$loadingbar.error();
       return Promise.reject(response?._data ?? null);
     },
     ...option,
@@ -98,8 +103,14 @@ export const islogin = (): Boolean => {
 
 export const clear = (): void => {
   if (!userConfig) userConfig = useUserConfig();
-  userConfig.clear();
+  userConfig.logout();
+};
+
+export const token = (): string => {
+  if (!userConfig) userConfig = useUserConfig();
+  return userConfig.token;
 };
 
 export { login, logout } from "./user";
 export { getChatList, insertChat, deleteChat, updateChat } from "./chat";
+export { startNewModelChat, getModelStream } from "./model";
