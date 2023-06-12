@@ -208,14 +208,26 @@
               </template>
               <template #footer>
                 <n-button-group size="tiny">
-                  <n-button strong secondary circle>
+                  <n-button
+                    v-if="list.role === 'user'"
+                    strong
+                    secondary
+                    circle
+                    @click="refreshMessage(nowChat, list)"
+                  >
                     <template #icon>
                       <n-icon>
                         <RefreshOutline />
                       </n-icon>
                     </template>
                   </n-button>
-                  <n-button strong secondary circle>
+                  <n-button
+                    strong
+                    secondary
+                    circle
+                    class="copy-btn"
+                    :data-clipboard-text="list.content"
+                  >
                     <template #icon>
                       <n-icon>
                         <CopyOutline />
@@ -386,7 +398,6 @@ const setTitle = (chat: chat) => {
   if (title && title.trim() !== "") {
     chat.title = title;
   } else {
-    window.$message.error("标题不能为空");
     return;
   }
   updateChat({
@@ -400,6 +411,114 @@ const setTitle = (chat: chat) => {
       getChatLists(false);
     }
   });
+};
+
+// refreshMessage
+const refreshMessage = (chat: chat, message: messages) => {
+  // if role is user, get the next assistant message
+  if (message.role === "user") {
+    const startIndex = chat.messages.findIndex(
+      (item) => item._id === message._id
+    );
+    // search the next assistant message
+    let nextAssistantMessage = chat.messages.find(
+      (item, index) =>
+        index > startIndex && item.role === "assistant" && item.choose_flag
+    );
+    // cut the message list
+    if (!nextAssistantMessage) {
+      const _id = uuidv4();
+      const replyMessage = {
+        _id: _id,
+        role: "assistant",
+        content: "正在思考中...",
+        choose: true,
+        created_at: new Date(),
+        choose_flag: true,
+      } as messages;
+      nowChat.value!.messages.push(replyMessage);
+      nextAssistantMessage = nowChat.value!.messages.find(
+        (item) => item._id === _id
+      );
+    }
+    nextAssistantMessage!.content = "正在思考中...";
+    const messages = chat.messages.slice(0, startIndex + 1);
+    const filter = messages
+      .filter((e) => e.choose_flag)
+      .map((e) => {
+        return {
+          role: e.role,
+          content: e.content,
+        };
+      });
+    startNewModelChat({
+      name: "gpt-35-turbo",
+      messages: filter,
+    }).then((res) => {
+      const { code, data } = res.data.value as Response<any>;
+      if (code === 0) {
+        // copy message
+        let messages = nowChat.value!.messages.map((item) => {
+          return {
+            _id: item._id,
+            role: item.role,
+            content: item.content,
+            created_at: item.created_at,
+            choose_flag: item.choose_flag,
+            updated_at: item.updated_at,
+          };
+        });
+        getModelStream(data._id)
+          .then((res) => {
+            if (!res.body) return;
+            const reader = res.body.getReader();
+            const decoder = new TextDecoder("utf-8");
+            let result = "";
+
+            async function readStream(): Promise<any> {
+              const { done, value } = await reader.read();
+              if (done) {
+                messages = nowChat.value!.messages.map((item) => {
+                  return {
+                    _id: item._id,
+                    role: item.role,
+                    content: item.content,
+                    created_at: item.created_at,
+                    choose_flag: item.choose_flag,
+                    updated_at: item.updated_at,
+                  };
+                });
+                return result;
+              }
+              const chunk = decoder.decode(value, { stream: true });
+              result += chunk;
+              if (nextAssistantMessage) {
+                nextAssistantMessage.content = result;
+              }
+              return readStream();
+            }
+            return readStream();
+          })
+          .then((res) => {
+            nextAssistantMessage!.updated_at = new Date();
+            updateChat({
+              _id: nowChat.value!._id!,
+              messages: messages,
+            }).then((res) => {
+              const { code } = res.data.value as Response<any>;
+              if (code !== 0) {
+                window.$message.error("消息保存失败，可能会导致无法漫游");
+              } else {
+                nowChatSaveFlag.value = true;
+                getChatLists(false);
+              }
+            });
+          });
+      } else {
+        window.$message.error("模型启动失败");
+      }
+    });
+  }
 };
 
 // sendMessages
@@ -484,7 +603,6 @@ const sendMessages = () => {
       const reference = nowChat.value!.messages.find(
         (item) => item._id === data._id
       );
-      console.log(reference);
       // copy message
       let messages = nowChat.value!.messages.map((item) => {
         return {
