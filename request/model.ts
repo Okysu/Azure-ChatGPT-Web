@@ -15,9 +15,11 @@ export const startNewModelChat = (data: ModelChatOptions) => {
 
 export const getModelStream = (clientId: string) => {
   return fetch("/api/model/stream/" + clientId, {
-    method: 'POST',
+    method: "POST",
     headers: {
       Authorization: "Bearer " + token(),
+      "X-Accel-Buffering": "no",
+      "Cache-Control": "no-cache",
     },
   });
 };
