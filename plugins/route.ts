@@ -1,4 +1,4 @@
-import { islogin as login, clear } from "~/api";
+import { islogin as login, clear } from "~/request";
 
 export default defineNuxtPlugin((nuxtApp) => {
   addRouteMiddleware(

@@ -293,7 +293,7 @@ import {
   insertChat,
   startNewModelChat,
   getModelStream,
-} from "~/api";
+} from "~/request";
 
 // icons
 import {

@@ -56,7 +56,7 @@ import { useAppConfig } from "~/stores/appConfig";
 import { useUserConfig } from "~/stores/userConfig";
 import { storeToRefs } from "pinia";
 import { FormInst, FormItemRule } from "naive-ui";
-import { Response, login, request } from "~/api";
+import { Response, login } from "~/request";
 
 // route & router
 const route = useRoute();
