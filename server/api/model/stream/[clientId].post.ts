@@ -16,6 +16,10 @@ export default defineEventHandler(async (event) => {
     (item) => item.clientId === clientId
   );
 
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+  res.setHeader("X-Accel-Buffering", "no");
+
   const { token } = event.context.auth;
   if (connection && connection.token === token) {
     const asyncResult = OpenAIClient.listChatCompletions(
