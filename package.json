@@ -19,6 +19,7 @@
   "dependencies": {
     "@azure/openai": "1.0.0-beta.2",
     "@css-render/vue3-ssr": "^0.15.12",
+    "@mdit/plugin-katex": "^0.4.7",
     "@pinia-plugin-persistedstate/nuxt": "^1.1.1",
     "@pinia/nuxt": "^0.4.11",
     "@vicons/ionicons5": "^0.12.0",
@@ -29,6 +30,7 @@
     "highlight.js": "^11.8.0",
     "js-sha256": "^0.9.0",
     "jsonwebtoken": "^9.0.0",
+    "markdown-it": "^13.0.1",
     "mongodb": "^5.6.0",
     "nodemailer": "^6.9.3",
     "redis": "^4.6.7",

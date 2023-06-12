@@ -13,6 +13,7 @@ body,
   width: 100%;
 }
 
+
 .n-card-header__main {
   font-size: 14px !important;
 }
@@ -20,4 +21,136 @@ body,
 .n-thing-main .n-thing-main__footer:not(:first-child) {
   margin-top: 5px !important;
   margin-left: 50px !important;
+}
+
+.message {
+  display: inline-block;
+  border: 1px solid #ebedf0;
+  border-radius: 4px;
+  padding: 8px 12px;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  min-width: auto;
+  max-width: 270px;
+}
+
+@media screen and (min-width: 768px) {
+  .message {
+    max-width: 100%;
+  }
+}
+
+pre.hljs {
+  padding: 12px 2px 12px 40px !important;
+  border-radius: 5px !important;
+  position: relative;
+  font-size: 14px !important;
+  line-height: 22px !important;
+  margin: 5px 0 !important;
+  max-width: 100%;
+}
+
+pre.hljs code {
+  display: block !important;
+  margin: 0 10px !important;
+  overflow-x: auto !important;
+}
+
+pre.hljs code::-webkit-scrollbar {
+  z-index: 11;
+  width: 6px;
+}
+
+pre.hljs code::-webkit-scrollbar:horizontal {
+  height: 6px;
+}
+
+pre.hljs code::-webkit-scrollbar-thumb {
+  border-radius: 5px;
+  width: 6px;
+  background: #666;
+}
+
+pre.hljs code::-webkit-scrollbar-corner,
+pre.hljs code::-webkit-scrollbar-track {
+  background: #1E1E1E;
+}
+
+pre.hljs code::-webkit-scrollbar-track-piece {
+  background: #1E1E1E;
+  width: 6px;
+}
+
+pre.hljs .line-numbers-rows {
+  position: absolute;
+  pointer-events: none;
+  top: 12px;
+  bottom: 12px;
+  left: 0;
+  font-size: 100%;
+  width: 40px;
+  text-align: center;
+  letter-spacing: -1px;
+  border-right: 1px solid rgba(0, 0, 0, .66);
+  user-select: none;
+  counter-reset: linenumber;
+}
+
+pre.hljs .line-numbers-rows span {
+  pointer-events: none;
+  display: block;
+  counter-increment: linenumber;
+}
+
+pre.hljs .line-numbers-rows span:before {
+  content: counter(linenumber);
+  color: #999;
+  display: block;
+  text-align: center;
+}
+
+pre.hljs b.name {
+  position: absolute;
+  top: 2px;
+  right: 50px;
+  z-index: 10;
+  color: #999;
+  pointer-events: none;
+}
+
+pre.hljs .copy-btn {
+  position: absolute;
+  top: 2px;
+  right: 4px;
+  padding: 4px;
+  z-index: 10;
+  color: #fff;
+  cursor: pointer;
+  background-color: transparent;
+  border: 0;
+  border-radius: 2px;
+  transition: all .2s ease-in-out;
+}
+
+pre.hljs .copy-btn:hover {
+  background-color: #333;
+  color: #fff;
+}
+
+code:not(pre code) {
+  padding: 2px 4px;
+  border-radius: 4px;
+  background-color: #f1f1f1;
+  color: #333;
+  font-size: 14px;
+}
+
+ol {
+  list-style-position: inside;
+}
+
+ol li::marker {
+  position: absolute;
+  font-weight: bold;
+  color: #999;
+  float: left;
 }

@@ -43,7 +43,7 @@
             >
               <template #header-extra>
                 <n-button-group size="tiny">
-                  <n-button strong secondary circle>
+                  <n-button strong secondary circle @click="setTitle(list)">
                     <template #icon>
                       <n-icon>
                         <PencilOutline />
@@ -132,7 +132,7 @@
                 text-overflow: ellipsis;
                 white-space: nowrap;
               "
-              >{{ nowChatTitle }}</span
+              >{{ nowChat.title || "New Chat" }}</span
             >
           </div>
           <div>
@@ -151,7 +151,7 @@
                   </n-icon>
                 </template>
               </n-button>
-              <n-button ghost circle>
+              <n-button ghost circle @click="deleteNowChat(nowChat._id!)">
                 <template #icon>
                   <n-icon>
                     <TrashBinOutline />
@@ -161,7 +161,9 @@
             </n-button-group>
           </div>
         </n-layout-header>
-        <n-layout-content content-style="padding: 24px; padding-top: 64px;">
+        <n-layout-content
+          content-style="padding: 24px; padding-top: 64px; max-width: 100%"
+        >
           <div class="chat-list" :style="`${!nowChat ? 'height: 100vh;' : ''}`">
             <div v-if="!nowChat">
               <n-result
@@ -194,15 +196,7 @@
                   v-if="list.role === 'user'"
                   src="https://source.yby.zone/avatar.jpg"
                 />
-                <n-avatar
-                  v-else
-                  :style="{
-                    color: getMatchingTextColor(color),
-                    backgroundColor: colorToHex(color),
-                  }"
-                >
-                  {{ list.role.slice(0, 2).toLocaleUpperCase() }}
-                </n-avatar>
+                <n-avatar v-else src="/images/robot.png" />
               </template>
               <template #header>
                 <span class="time">{{
@@ -210,7 +204,7 @@
                 }}</span>
               </template>
               <template #description>
-                <div class="message">{{ list.content }}</div>
+                <div v-html="md.render(list.content)" class="message"></div>
               </template>
               <template #footer>
                 <n-button-group size="tiny">
@@ -295,6 +289,12 @@ import {
   getModelStream,
 } from "~/request";
 
+// markdown
+import "highlight.js/styles/vs2015.css";
+import clipboard from "clipboard";
+import { md } from "~/utils/markdownit";
+let clipboardjs: any = null;
+
 // icons
 import {
   AddOutline,
@@ -323,9 +323,6 @@ const userConfig = useUserConfig();
 const { collapsed } = storeToRefs(appConfig);
 const { user } = storeToRefs(userConfig);
 
-// avatar color
-const color = randomColor();
-
 // chat list
 const chatList = ref<chat[]>([]);
 
@@ -352,12 +349,6 @@ const createNewChat = () => {
 const nowChat = ref<chat | null>(null);
 const nowChatSaveFlag = ref<boolean>(false);
 
-// nowChatTitle
-const nowChatTitle = computed(() => {
-  if (nowChat.value === null) return "New Chat";
-  return nowChat.value.title;
-});
-
 // changeNowChat
 const changeNowChat = (chat: chat) => {
   nowChat.value = chat;
@@ -368,9 +359,47 @@ const changeNowChat = (chat: chat) => {
 // setNowChatTitle
 const setNowChatTitle = () => {
   const title = prompt("请输入新的对话标题", nowChat.value!.title);
-  if (title) {
+  if (title && title.trim() !== "") {
     nowChat.value!.title = title;
+  } else {
+    window.$message.error("标题不能为空");
+    return;
   }
+  if (nowChatSaveFlag.value) {
+    updateChat({
+      _id: nowChat.value!._id!,
+      title: title,
+    }).then((res) => {
+      const { code } = res.data.value as Response<any>;
+      if (code !== 0) {
+        window.$message.error("消息保存失败，可能会导致无法漫游");
+      } else {
+        getChatLists(false);
+      }
+    });
+  }
+};
+
+// setTitle
+const setTitle = (chat: chat) => {
+  const title = prompt("请输入新的对话标题", chat.title);
+  if (title && title.trim() !== "") {
+    chat.title = title;
+  } else {
+    window.$message.error("标题不能为空");
+    return;
+  }
+  updateChat({
+    _id: chat._id!,
+    title: title,
+  }).then((res) => {
+    const { code } = res.data.value as Response<any>;
+    if (code !== 0) {
+      window.$message.error("消息保存失败，可能会导致无法漫游");
+    } else {
+      getChatLists(false);
+    }
+  });
 };
 
 // sendMessages
@@ -451,7 +480,6 @@ const sendMessages = () => {
         created_at: new Date(),
         choose_flag: true,
       } as messages;
-
       nowChat.value!.messages.push(replyMessage);
       const reference = nowChat.value!.messages.find(
         (item) => item._id === data._id
@@ -579,6 +607,7 @@ const getChatLists = async (needNow: boolean = true) => {
           const chat = data.find((e) => e._id === nowChatId);
           if (chat) {
             nowChat.value = chat;
+            nowChatSaveFlag.value = true;
           } else {
             createNewChat();
           }
@@ -630,6 +659,13 @@ const startNewChat = (type: string) => {
 
 onMounted(async () => {
   getChatLists();
+  clipboardjs = new clipboard(".copy-btn");
+  clipboardjs.on("success", () => {
+    window.$message.success("复制成功");
+  });
+  clipboardjs.on("error", () => {
+    window.$message.success("复制失败");
+  });
 });
 
 // title
@@ -675,17 +711,6 @@ useHead({
   font-size: 12px;
   color: darkgray;
   direction: ltr;
-}
-
-.message {
-  display: inline-flex;
-  flex-direction: column;
-  word-wrap: break-word;
-  border: 1px solid #ebedf0;
-  border-radius: 4px;
-  padding: 8px 12px;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  width: auto;
 }
 
 .message-list {

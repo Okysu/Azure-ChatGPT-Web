@@ -1,13 +1,17 @@
 import { RedisClientType, createClient } from "redis";
 
-let client: any = null;
+const client = {
+  connection: null as any
+};
 
 const url = process.env.REDIS_URL;
 const password = process.env.REDIS_PASSWORD;
 const database = Number(process.env.REDIS_DATABASE);
 
 if (!url || !password || !database) {
-  throw new Error("REDIS_URL, REDIS_PASSWORD or REDIS_DATABASE not found in env.");
+  throw new Error(
+    "REDIS_URL, REDIS_PASSWORD or REDIS_DATABASE not found in env."
+  );
 }
 
 /**
@@ -23,7 +27,7 @@ async function connect() {
   await redisClient
     .connect()
     .then(() => {
-      client = redisClient;
+      client.connection = redisClient;
       console.log("Connected successfully to redis server.");
     })
     .catch((err) => {
@@ -37,10 +41,10 @@ async function connect() {
  * @returns {RedisClientType} client
  */
 async function getRedis(): Promise<RedisClientType | null> {
-  if (!client) {
+  if (!client.connection) {
     await connect();
   }
-  return client;
+  return client.connection;
 }
 
 /**
@@ -58,7 +62,7 @@ async function set(
 ): Promise<boolean> {
   return new Promise((resolve, reject) => {
     if (expire) {
-      client?.set(
+      client.connection?.set(
         key,
         value,
         {
@@ -73,7 +77,7 @@ async function set(
         }
       );
     } else {
-      client?.set(key, value, (err: any, reply: string) => {
+      client.connection?.set(key, value, (err: any, reply: string) => {
         if (err) {
           reject(err);
         } else {
@@ -91,7 +95,7 @@ async function set(
  * @throws {Error}
  */
 async function get(key: string): Promise<string | null> {
-  return (await client?.get(key)) ?? null;
+  return (await  client.connection?.get(key)) ?? null;
 }
 
 /**
@@ -102,7 +106,7 @@ async function get(key: string): Promise<string | null> {
  */
 async function del(key: string): Promise<boolean> {
   return new Promise((resolve, reject) => {
-    client?.del(key, (err: any, reply: number) => {
+    client.connection?.del(key, (err: any, reply: number) => {
       if (err) {
         reject(err);
       } else {
@@ -120,7 +124,7 @@ async function del(key: string): Promise<boolean> {
  */
 async function exists(key: string): Promise<boolean> {
   return new Promise((resolve, reject) => {
-    client?.exists(key, (err: any, reply: number) => {
+    client.connection?.exists(key, (err: any, reply: number) => {
       if (err) {
         reject(err);
       } else {
@@ -139,7 +143,7 @@ async function exists(key: string): Promise<boolean> {
  */
 async function expire(key: string, seconds: number): Promise<boolean> {
   return new Promise((resolve, reject) => {
-    client?.expire(key, seconds, (err: any, reply: number) => {
+    client.connection?.expire(key, seconds, (err: any, reply: number) => {
       if (err) {
         reject(err);
       } else {

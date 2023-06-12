@@ -11,7 +11,9 @@ if (!uri || !password || !username || !db_name) {
   );
 }
 
-let db: Db | null = null;
+const db = {
+  connection: null as Db | null,
+};
 
 /**
  * Connect to the mongodb server.
@@ -24,7 +26,7 @@ async function connect() {
         password: process.env.MONGODB_PASSWORD!,
       },
     });
-    db = client.db(process.env.MONGODB_DB);
+    db.connection = client.db(process.env.MONGODB_DB);
     console.log("Connected successfully to mongodb server.");
   } catch (err) {
     console.log("Failed to connect to mongodb server.", err);
@@ -37,10 +39,10 @@ async function connect() {
  * @returns {Db} db
  */
 async function getDB(): Promise<Db | null> {
-  if (!db) {
+  if (!db.connection) {
     await connect();
   }
-  return db;
+  return db.connection;
 }
 
 export { getDB };
