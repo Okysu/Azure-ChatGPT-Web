@@ -1,5 +1,5 @@
 import { sha256 } from "js-sha256";
-import { useUserConfig } from "@/stores/userConfig";
+import { useUserConfig } from "~/stores/userConfig";
 import { UseFetchOptions } from "nuxt/app";
 
 // avoid raw password in code
