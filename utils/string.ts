@@ -48,7 +48,7 @@ export const getMatchingTextColor = (color: Color | string): string => {
 };
 
 export function cutTitle(title: string): string {
-  const punctuations = [",", "，", ".", "。", "!", "！"];
+  const punctuations = [",", "，", ".", "。", "!", "！", "(", "（", ")", "）"];
   let endIndex = title.length;
   for (let i = 0; i < title.length; i++) {
     if (punctuations.includes(title[i])) {

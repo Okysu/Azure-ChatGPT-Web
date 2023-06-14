@@ -1,6 +1,11 @@
 <template>
-  <n-config-provider :locale="settings.locale" :date-locale="settings.dateLocale" :theme-overrides="themeOverrides"
-    :theme="settings.theme" inline-theme-disabled>
+  <n-config-provider
+    :locale="settings.locale"
+    :date-locale="settings.dateLocale"
+    :theme-overrides="themeOverrides"
+    :theme="settings.theme"
+    inline-theme-disabled
+  >
     <n-global-style />
     <n-loading-bar-provider>
       <n-message-provider>
@@ -21,7 +26,15 @@ import { useAppConfig } from "~/stores/appConfig";
 // pinia storeToRefs
 import { storeToRefs } from "pinia";
 // locale and dateLocale are used to set the language of the app
-import { zhCN, dateZhCN, enUS, dateEnUS, lightTheme, darkTheme, useOsTheme } from "naive-ui";
+import {
+  zhCN,
+  dateZhCN,
+  enUS,
+  dateEnUS,
+  lightTheme,
+  darkTheme,
+  useOsTheme,
+} from "naive-ui";
 // global message component
 import globalMessage from "~/components/globalMessage.vue";
 

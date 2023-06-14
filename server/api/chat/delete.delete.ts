@@ -25,11 +25,11 @@ export default defineEventHandler(async (event) => {
       data: null,
     };
   }
-  const collection = db.collection("chat");
+  const collection = db.collection("chat_" + _uid);
 
   // delete chat but set del_flag to true
   await collection.updateOne(
-    { _id: new ObjectId(_id), created_by: _uid },
+    { _id: new ObjectId(_id) },
     {
       $set: {
         del_flag: true,

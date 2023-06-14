@@ -2,6 +2,7 @@ type user = {
   _id: string;
   username: string;
   password: string | null;
+  avatar: string;
   email: string;
   type: string;
   expense_base: number;
@@ -12,11 +13,14 @@ type user = {
 };
 
 type options = {
+  modelName?: string;
   maxTokens?: number;
   temperature?: number;
   topP?: number;
   presencePenalty?: number;
   frequencyPenalty?: number;
+  playRole?: string;
+  singleMode?: boolean;
 };
 
 type messages = {
@@ -33,9 +37,9 @@ type chat = {
   title: string;
   type: string; // chat or image
   messages: messages[];
-  created_by?: string;
   created_at?: Date;
   updated_at?: Date;
+  options?: options;
 };
 
 type sseConnection = {
@@ -49,4 +53,14 @@ type sseConnection = {
 type message = {
   role: string;
   content: string;
+};
+
+type wallet = {
+  _id?: string;
+  title: string;
+  type: number; // 0: income, 1: expense
+  count: number;
+  created_at?: Date;
+  updated_at?: Date;
+  valid_flag?: boolean;
 };

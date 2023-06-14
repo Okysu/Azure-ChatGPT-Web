@@ -11,6 +11,9 @@ export default defineNuxtConfig({
   app: {
     head: {
       title: "Azure ChatGPT Playground",
+      link: [
+        { rel: 'stylesheet', href: 'https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.5.1/katex.min.css' }
+      ],
     },
   },
   modules: [

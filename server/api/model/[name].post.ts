@@ -1,6 +1,7 @@
 const supportedModels = process.env.SUPPORT_MODEL?.split(",") || [];
 import { v4 as uuidv4 } from "uuid";
 import { encode } from "gpt-3-encoder";
+import { expenseToken } from "./stream/[clientId].post";
 
 /* SSE Connections Endpoint */
 export const activeConnections = [] as sseConnection[];
@@ -53,7 +54,7 @@ export default defineEventHandler(async (event) => {
   }
   const { name } = event.context.params;
   const { res } = event.node;
-  const { token } = event.context.auth;
+  const { token, user } = event.context.auth;
   // if don't support this model, return 404
   if (!supportedModels.includes(name)) {
     res.statusCode = 404;
@@ -134,7 +135,23 @@ export default defineEventHandler(async (event) => {
     };
   }
 
-  const clientId = generateClientId(token, messages, options || defaultOptions, name);
+  const valid = await expenseToken(user, count);
+
+  if (valid !== 0) {
+    res.statusCode = 400;
+    return {
+      code: valid,
+      msg: "wallet status error.",
+      data: null,
+    };
+  }
+
+  const clientId = generateClientId(
+    token,
+    messages,
+    options || defaultOptions,
+    name
+  );
 
   res.statusCode = 200;
   return {

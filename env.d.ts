@@ -5,3 +5,5 @@ declare interface Window {
   $loadingbar: LoadingBarInst;
   $notify: NotificationApiInjection;
 }
+
+declare module 'markdown-it-katex';

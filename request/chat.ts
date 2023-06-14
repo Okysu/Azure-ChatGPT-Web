@@ -8,6 +8,7 @@ interface ChatOptionsUpdate {
   _id: string;
   messages?: messages[];
   title?: string;
+  options?: options;
 }
 
 export const updateChat = (data: ChatOptionsUpdate) => {
@@ -17,6 +18,7 @@ export const updateChat = (data: ChatOptionsUpdate) => {
 interface ChatOptionsInsert {
   type: "chat" | "image";
   messages: messages[];
+  options?: options;
 }
 
 export const insertChat = (data: ChatOptionsInsert) => {

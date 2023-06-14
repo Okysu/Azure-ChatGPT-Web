@@ -13,7 +13,7 @@ export default defineEventHandler(async (event) => {
     };
   }
 
-  const { messages, type } = body;
+  const { messages, type, options } = body;
 
   if (!messages || !Array.isArray(messages) || !type) {
     res.statusCode = 400;
@@ -34,16 +34,16 @@ export default defineEventHandler(async (event) => {
       data: null,
     };
   }
-  const collection = db.collection("chat");
+  const collection = db.collection("chat_" + _id);
   const objectId = new ObjectId();
   // create chat
   await collection.insertOne({
     _id: objectId,
-    created_by: _id,
     created_at: new Date(),
     updated_at: new Date(),
     del_flag: false,
     messages: JSON.stringify(messages),
+    options: options ? JSON.stringify(options) : null,
     title: "New Chat",
     type: type,
   });

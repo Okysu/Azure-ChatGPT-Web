@@ -13,7 +13,7 @@ export default defineEventHandler(async (event) => {
     };
   }
 
-  const { _id, messages, title } = body;
+  const { _id, messages, title, options } = body;
 
   const { _id: _uid } = user;
   const db = await getDB();
@@ -25,12 +25,12 @@ export default defineEventHandler(async (event) => {
       data: null,
     };
   }
-  const collection = db.collection("chat");
+  const collection = db.collection("chat_" + _uid);
 
-  if (!messages || !Array.isArray(messages)) {
+  if ((!messages || !Array.isArray(messages)) && !options) {
     // just update title
     await collection.updateOne(
-      { _id: new ObjectId(_id), created_by: _uid },
+      { _id: new ObjectId(_id) },
       {
         $set: {
           title: title || "New Chat",
@@ -38,10 +38,10 @@ export default defineEventHandler(async (event) => {
         },
       }
     );
-  } else if (!title) {
+  } else if (!title && !options) {
     // just update messages
     await collection.updateOne(
-      { _id: new ObjectId(_id), created_by: _uid },
+      { _id: new ObjectId(_id) },
       {
         $set: {
           messages: JSON.stringify(messages),
@@ -49,10 +49,21 @@ export default defineEventHandler(async (event) => {
         },
       }
     );
+  } else if (!title && !messages && options) {
+    // just update options
+    await collection.updateOne(
+      { _id: new ObjectId(_id) },
+      {
+        $set: {
+          options: JSON.stringify(options),
+          updated_at: new Date(),
+        },
+      }
+    );
   } else {
     // update both
     await collection.updateOne(
-      { _id: new ObjectId(_id), created_by: _uid },
+      { _id: new ObjectId(_id) },
       {
         $set: {
           messages: JSON.stringify(messages),

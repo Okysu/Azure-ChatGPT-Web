@@ -1,4 +1,4 @@
-const auth = ["auth", "model", "logout", "chat"];
+const auth = ["auth", "model", "logout", "chat", "wallet"];
 export default defineEventHandler(async (event) => {
   // if url has auth, need to check permission
   const req = event.node.req;

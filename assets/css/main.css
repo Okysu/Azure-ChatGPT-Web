@@ -25,34 +25,39 @@ body,
 
 .message {
   display: inline-block;
+  word-wrap: break-word;
   border: 1px solid #ebedf0;
   border-radius: 4px;
   padding: 8px 12px;
   box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   min-width: auto;
-  max-width: 270px;
 }
 
-@media screen and (min-width: 768px) {
-  .message {
-    max-width: 768px;
-  }
+
+pre {
+  max-width: 100vh !important;
+  white-space: pre-wrap;
+  word-wrap: break-word;
 }
 
 pre.hljs {
-  padding: 12px 2px 12px 40px !important;
+  padding: 12px !important;
   border-radius: 5px !important;
   position: relative;
   font-size: 14px !important;
   line-height: 22px !important;
   margin: 5px 0 !important;
-  max-width: 100%;
+  white-space: pre-wrap;
+  word-wrap: break-word;
 }
 
 pre.hljs code {
   display: block !important;
   margin: 0 10px !important;
   overflow-x: auto !important;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  max-width: 100% !important;
 }
 
 pre.hljs code::-webkit-scrollbar {
@@ -78,34 +83,6 @@ pre.hljs code::-webkit-scrollbar-track {
 pre.hljs code::-webkit-scrollbar-track-piece {
   background: #1E1E1E;
   width: 6px;
-}
-
-pre.hljs .line-numbers-rows {
-  position: absolute;
-  pointer-events: none;
-  top: 12px;
-  bottom: 12px;
-  left: 0;
-  font-size: 100%;
-  width: 40px;
-  text-align: center;
-  letter-spacing: -1px;
-  border-right: 1px solid rgba(0, 0, 0, .66);
-  user-select: none;
-  counter-reset: linenumber;
-}
-
-pre.hljs .line-numbers-rows span {
-  pointer-events: none;
-  display: block;
-  counter-increment: linenumber;
-}
-
-pre.hljs .line-numbers-rows span:before {
-  content: counter(linenumber);
-  color: #999;
-  display: block;
-  text-align: center;
 }
 
 pre.hljs b.name {
@@ -145,12 +122,5 @@ code:not(pre code) {
 }
 
 ol {
-  list-style-position: inside;
-}
-
-ol li::marker {
-  position: absolute;
-  font-weight: bold;
-  color: #999;
-  float: left;
+  padding: 0 1.5em;
 }

@@ -76,8 +76,7 @@
           <n-thing>
             <template #avatar>
               <n-avatar
-                src="https://source.yby.zone/avatar.jpg"
-                round
+                :src="user.avatar || 'https://source.yby.zone/avatar.jpg'"
                 size="medium"
               />
             </template>
@@ -92,9 +91,31 @@
               </n-button>
             </template>
             <template #description>
-              <span>4000/5000</span>
-              <n-progress type="line" status="success" :percentage="80">
-                80%
+              <div style="display: flex; justify-content: space-between">
+                <span
+                  >{{ Math.round(computedWallet.rest) }} /
+                  {{ Math.round(computedWallet.total) }}</span
+                >
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 3px;
+                  "
+                >
+                  <n-a @click="getWalletInfo">刷新</n-a>
+                  <n-a>详情</n-a>
+                </div>
+              </div>
+              <n-progress
+                type="line"
+                status="success"
+                :percentage="(computedWallet.rest / computedWallet.total) * 100"
+              >
+                {{
+                  Math.round((computedWallet.rest / computedWallet.total) * 100)
+                }}
+                %
               </n-progress>
             </template>
           </n-thing>
@@ -144,7 +165,7 @@
                   </n-icon>
                 </template>
               </n-button>
-              <n-button ghost circle>
+              <n-button ghost circle @click="showModalOptions = true">
                 <template #icon>
                   <n-icon>
                     <BulbOutline />
@@ -189,14 +210,37 @@
             </div>
             <n-thing
               v-else
-              v-for="list in nowChat.messages.filter((e) => e.choose_flag)"
+              v-for="list in nowChat.messages.filter(
+                (e) => e.choose_flag && e.role !== 'system'
+              )"
             >
               <template #avatar>
                 <n-avatar
                   v-if="list.role === 'user'"
-                  src="https://source.yby.zone/avatar.jpg"
+                  :src="user.avatar || 'https://source.yby.zone/avatar.jpg'"
                 />
-                <n-avatar v-else src="/images/robot.png" />
+                <n-avatar
+                  :style="{
+                    color: getMatchingTextColor(color),
+                    backgroundColor: colorToHex(color),
+                  }"
+                  v-else-if="list.role === 'system'"
+                >
+                  <n-icon>
+                    <KeyOutline />
+                  </n-icon>
+                </n-avatar>
+                <n-avatar
+                  :style="{
+                    color: getMatchingTextColor(color),
+                    backgroundColor: colorToHex(color),
+                  }"
+                  v-else
+                >
+                  <n-icon>
+                    <CompassOutline />
+                  </n-icon>
+                </n-avatar>
               </template>
               <template #header>
                 <span class="time">{{
@@ -281,6 +325,246 @@
         </n-layout-footer>
       </n-layout>
     </n-layout>
+    <n-modal v-model:show="showModalOptions">
+      <n-card
+        class="modal-card"
+        title="模型设置"
+        :bordered="false"
+        size="huge"
+        role="dialog"
+        aria-modal="true"
+      >
+        <template #header-extra>
+          <n-button circle strong secondary @click="showModalOptions = false">
+            <n-icon>
+              <CloseOutline />
+            </n-icon>
+          </n-button>
+        </template>
+        <n-tabs type="line" animated>
+          <n-tab-pane name="basic" tab="基础设置">
+            <n-scrollbar style="max-height: 540px">
+              <n-form-item label-placement="left" size="small" label="模型角色">
+                <n-input
+                  v-model:value="nowChat!.options!.playRole"
+                  type="textarea"
+                  placeholder="例如：你可以设置模型角色为“你是精通中国历史的历史学家”，那么模型将更加倾向于回答关于历史的问题。"
+                />
+              </n-form-item>
+              <n-form-item
+                label-placement="left"
+                size="small"
+                label="最长生成长度"
+                :show-feedback="false"
+              >
+                <n-slider
+                  :min="100"
+                  :max="4000"
+                  v-model:value="nowChat!.options!.maxTokens"
+                  :step="10"
+                />
+                <n-input-number
+                  style="max-width: 120px; margin-left: 15px"
+                  v-model:value="nowChat!.options!.maxTokens"
+                  :min="100"
+                  :max="4000"
+                  size="small"
+                />
+              </n-form-item>
+              <n-text depth="3">
+                令牌数量越大，模型生成的文本越长，但可能会耗费更多Token哦。
+              </n-text>
+              <n-form-item
+                style="margin-top: 24px"
+                label-placement="left"
+                size="small"
+                label="温度"
+                :show-feedback="false"
+              >
+                <n-slider
+                  :min="0"
+                  :max="2"
+                  v-model:value="nowChat!.options!.temperature"
+                  :step="0.1"
+                />
+                <n-input-number
+                  style="max-width: 100px; margin-left: 15px"
+                  v-model:value="nowChat!.options!.temperature"
+                  :min="0"
+                  :max="2"
+                  size="small"
+                />
+              </n-form-item>
+              <n-text depth="3">
+                温度越高，模型生成的文本越随机，对于富有创造力的生成要求，我们推荐为0.9，对有明确答案的生成，我们建议设置为0。
+              </n-text>
+              <n-form-item
+                style="margin-top: 24px"
+                label-placement="left"
+                size="small"
+                label="Top P"
+                :show-feedback="false"
+              >
+                <n-slider
+                  :min="0"
+                  :max="1"
+                  v-model:value="nowChat!.options!.topP"
+                  :step="0.1"
+                />
+                <n-input-number
+                  style="max-width: 100px; margin-left: 15px"
+                  v-model:value="nowChat!.options!.topP"
+                  :min="0"
+                  :max="1"
+                  size="small"
+                />
+              </n-form-item>
+              <n-text depth="3">
+                当值为0.1意味着只考虑包含前10%概率质量的内容生产。我们通常建议更改此设置或温度，但不要同时更改这两者。
+              </n-text>
+              <n-form-item
+                style="margin-top: 24px"
+                label-placement="left"
+                size="small"
+                label="频率惩罚"
+                :show-feedback="false"
+              >
+                <n-slider
+                  :min="-2"
+                  :max="2"
+                  v-model:value="nowChat!.options!.frequencyPenalty"
+                  :step="0.1"
+                />
+                <n-input-number
+                  style="max-width: 100px; margin-left: 15px"
+                  v-model:value="nowChat!.options!.frequencyPenalty"
+                  :min="-2"
+                  :max="2"
+                  size="small"
+                />
+              </n-form-item>
+              <n-text depth="3">
+                当设置为较高的值时，生成文本会更加辞藻华丽，避免出现过于常见的单词或短语。
+              </n-text>
+              <n-form-item
+                style="margin-top: 24px"
+                label-placement="left"
+                size="small"
+                label="存在惩罚"
+                :show-feedback="false"
+              >
+                <n-slider
+                  :min="-2"
+                  :max="2"
+                  v-model:value="nowChat!.options!.presencePenalty"
+                  :step="0.1"
+                />
+                <n-input-number
+                  style="max-width: 100px; margin-left: 15px"
+                  v-model:value="nowChat!.options!.presencePenalty"
+                  :min="-2"
+                  :max="2"
+                  size="small"
+                />
+              </n-form-item>
+              <n-text depth="3">
+                当设置为较高的值时，生成文本会更加多样化，避免出现重复的内容。
+              </n-text>
+              <n-form-item
+                style="margin-top: 24px"
+                label-placement="left"
+                size="small"
+                label="单对话模式"
+                :show-feedback="false"
+              >
+                <n-switch v-model:value="nowChat!.options!.singleMode">
+                  <template #checked> 已开启 单对话模式 </template>
+                  <template #unchecked> 已关闭 单对话模式 </template>
+                </n-switch>
+              </n-form-item>
+              <n-text depth="3">
+                对于关联性不强的对话，我们建议开启此模式。并且，此模式下，所消耗的Token数量会减少。与此同时，单对话模式下刷新消息将不可用。
+              </n-text>
+            </n-scrollbar>
+          </n-tab-pane>
+          <n-tab-pane name="history" tab="历史消息">
+            <n-scrollbar style="max-height: 540px">
+              <n-thing
+                v-for="list in nowChat!.messages.filter(e=>e.role !== 'system')"
+              >
+                <template #avatar>
+                  <n-avatar
+                    v-if="list.role === 'user'"
+                    :src="user.avatar || 'https://source.yby.zone/avatar.jpg'"
+                  />
+                  <n-avatar
+                    :style="{
+                      color: getMatchingTextColor(color),
+                      backgroundColor: colorToHex(color),
+                    }"
+                    v-else-if="list.role === 'system'"
+                  >
+                    <n-icon>
+                      <KeyOutline />
+                    </n-icon>
+                  </n-avatar>
+                  <n-avatar
+                    :style="{
+                      color: getMatchingTextColor(color),
+                      backgroundColor: colorToHex(color),
+                    }"
+                    v-else
+                  >
+                    <n-icon>
+                      <CompassOutline />
+                    </n-icon>
+                  </n-avatar>
+                </template>
+                <template #header>
+                  <span class="time">{{
+                    new Date(list.created_at!).toLocaleString()
+                  }}</span>
+                </template>
+                <template #description>
+                  <div v-html="md.render(list.content)" class="message"></div>
+                </template>
+                <template #header-extra>
+                  <n-switch v-model:value="list.choose_flag">
+                    <template #checked> 已选中 </template>
+                    <template #unchecked> 已舍弃 </template>
+                  </n-switch>
+                </template>
+                <template #footer>
+                  <n-button-group size="tiny">
+                    <n-button
+                      strong
+                      secondary
+                      circle
+                      class="copy-btn"
+                      :data-clipboard-text="list.content"
+                    >
+                      <template #icon>
+                        <n-icon>
+                          <CopyOutline />
+                        </n-icon>
+                      </template>
+                    </n-button>
+                  </n-button-group>
+                </template>
+              </n-thing>
+            </n-scrollbar>
+          </n-tab-pane>
+        </n-tabs>
+        <template #footer>
+          <div style="display: flex; justify-content: space-between">
+            <n-text depth="3">
+              修改将立即生效，但仅限于本次设置有效，若想将配置内容保存到会话记录漫游，可以选择上传到服务器。
+            </n-text>
+            <n-button @click="updateModelOptions"> 上传到服务器 </n-button>
+          </div>
+        </template>
+      </n-card>
+    </n-modal>
   </div>
 </template>
 
@@ -299,30 +583,30 @@ import {
   insertChat,
   startNewModelChat,
   getModelStream,
+  getWallet,
 } from "~/request";
 
 // markdown
 import "highlight.js/styles/vs2015.css";
 import clipboard from "clipboard";
 import { md } from "~/utils/markdownit";
-let clipboardjs: any = null;
+let clipboardjs: ClipboardJS | null = null;
 
 // icons
 import {
   AddOutline,
   PaperPlaneOutline,
   BulbOutline,
-  BookOutline,
   SettingsOutline,
   CloseOutline,
-  HandLeftOutline,
-  InformationOutline,
+  KeyOutline,
   TrashBinOutline,
   SearchOutline,
   PencilOutline,
   CopyOutline,
   RefreshOutline,
   MenuOutline,
+  CompassOutline,
 } from "@vicons/ionicons5";
 
 // route
@@ -334,6 +618,8 @@ const appConfig = useAppConfig();
 const userConfig = useUserConfig();
 const { collapsed } = storeToRefs(appConfig);
 const { user } = storeToRefs(userConfig);
+
+const color = randomColor();
 
 // chat list
 const chatList = ref<chat[]>([]);
@@ -415,6 +701,11 @@ const setTitle = (chat: chat) => {
 
 // refreshMessage
 const refreshMessage = (chat: chat, message: messages) => {
+  if (nowChat.value?.options?.singleMode) {
+    window.$message.error("单消息模式下刷新消息将不可用");
+    return;
+  }
+  addPlayRole(chat.options?.playRole || "");
   // if role is user, get the next assistant message
   if (message.role === "user") {
     const startIndex = chat.messages.findIndex(
@@ -454,9 +745,198 @@ const refreshMessage = (chat: chat, message: messages) => {
     startNewModelChat({
       name: "gpt-35-turbo",
       messages: filter,
+    })
+      .then((res) => {
+        const { code, data } = res.data.value as Response<any>;
+        if (code === 0) {
+          // copy message
+          let messages = nowChat.value!.messages.map((item) => {
+            return {
+              _id: item._id,
+              role: item.role,
+              content: item.content,
+              created_at: item.created_at,
+              choose_flag: item.choose_flag,
+              updated_at: item.updated_at,
+            };
+          });
+          getModelStream(data._id)
+            .then((res) => {
+              if (!res.body) return;
+              const reader = res.body.getReader();
+              const decoder = new TextDecoder("utf-8");
+              let result = "";
+
+              async function readStream(): Promise<any> {
+                const { done, value } = await reader.read();
+                if (done) {
+                  messages = nowChat.value!.messages.map((item) => {
+                    return {
+                      _id: item._id,
+                      role: item.role,
+                      content: item.content,
+                      created_at: item.created_at,
+                      choose_flag: item.choose_flag,
+                      updated_at: item.updated_at,
+                    };
+                  });
+                  return result;
+                }
+                const chunk = decoder.decode(value, { stream: true });
+                result += chunk;
+                if (nextAssistantMessage) {
+                  nextAssistantMessage.content = result;
+                }
+                return readStream();
+              }
+              return readStream();
+            })
+            .then((res) => {
+              nextAssistantMessage!.updated_at = new Date();
+              updateChat({
+                _id: nowChat.value!._id!,
+                messages: messages,
+              }).then((res) => {
+                const { code } = res.data.value as Response<any>;
+                if (code !== 0) {
+                  window.$message.error("消息保存失败，可能会导致无法漫游");
+                } else {
+                  nowChatSaveFlag.value = true;
+                  getChatLists(false);
+                }
+              });
+            });
+        } else {
+          window.$message.error("模型启动失败，或账号余额不足");
+        }
+      })
+      .catch((err) => {
+        window.$message.error("模型启动失败，或账号余额不足");
+      });
+  }
+};
+
+// defaultModelOptions
+const defaultModelOptions = {
+  modelName: "gpt-35-turbo",
+  maxTokens: 1000,
+  temperature: 0.7,
+  topP: 1,
+  frequencyPenalty: 0,
+  presencePenalty: 0,
+  playRole: "",
+  singleMode: false,
+};
+
+// sendMessages
+const promptValue = ref<string>("");
+const sendMessages = () => {
+  const value = promptValue.value;
+  if (value.trim() === "") {
+    window.$message.error("请输入内容");
+    return;
+  }
+  addPlayRole(nowChat.value!.options?.playRole || "");
+  nowChatSaveFlag.value =
+    nowChat.value!.messages.filter((item) => item.role === "user").length > 0;
+  const newMessage = {
+    _id: uuidv4(),
+    role: "user",
+    content: value,
+    created_at: new Date(),
+    choose_flag: true,
+  } as messages;
+  nowChat.value!.messages.push(newMessage);
+  promptValue.value = "";
+  let messages: messages[] = [];
+  // if single mode, send only one message
+  if (nowChat.value?.options?.singleMode) {
+    messages = nowChat.value!.messages.filter((item) => item.role === "system");
+    const assistant = nowChat.value!.messages.filter(
+      (item) => item.role === "assistant"
+    );
+    if (assistant.length) {
+      messages.push(assistant[assistant.length - 1]);
+    }
+    messages.push(newMessage);
+  } else {
+    // copy message don't = nowChat.value!.messages
+    messages = nowChat.value!.messages.map((item) => {
+      return {
+        _id: item._id,
+        role: item.role,
+        content: item.content,
+        created_at: item.created_at,
+        choose_flag: item.choose_flag,
+        updated_at: item.updated_at,
+      };
+    });
+  }
+  if (nowChatSaveFlag.value) {
+    updateChat({
+      _id: nowChat.value!._id!,
+      messages: messages,
+    }).then((res) => {
+      const { code } = res.data.value as Response<any>;
+      if (code !== 0) {
+        window.$message.error("消息保存失败，可能会导致无法漫游");
+      }
+    });
+  } else {
+    insertChat({
+      type: nowChat.value!.type as "chat" | "image",
+      messages: messages,
+      options: defaultModelOptions,
     }).then((res) => {
       const { code, data } = res.data.value as Response<any>;
       if (code === 0) {
+        nowChat.value!._id = data._id;
+        history.pushState(null, "", "/?chat=" + data._id);
+      } else {
+        window.$message.error("消息保存失败，可能会导致无法漫游");
+      }
+    });
+  }
+  getChatLists(false);
+
+  const filter = messages
+    .filter((e) => e.choose_flag)
+    .map((e) => {
+      return {
+        role: e.role,
+        content: e.content,
+      };
+    });
+
+  // ready for modelOptions
+  const modelOptions = {
+    maxTokens: nowChat.value!.options?.maxTokens || 1000,
+    temperature: nowChat.value!.options?.temperature || 0.7,
+    topP: nowChat.value!.options?.topP || 1,
+    frequencyPenalty: nowChat.value!.options?.frequencyPenalty || 0,
+    presencePenalty: nowChat.value!.options?.presencePenalty || 0,
+  };
+
+  startNewModelChat({
+    name: "gpt-35-turbo",
+    messages: filter!,
+    options: modelOptions,
+  })
+    .then((res) => {
+      const { code, data } = res.data.value as Response<any>;
+      if (code === 0) {
+        const replyMessage = {
+          _id: data._id,
+          role: "assistant",
+          content: "正在思考中...",
+          choose: true,
+          created_at: new Date(),
+          choose_flag: true,
+        } as messages;
+        nowChat.value!.messages.push(replyMessage);
+        const reference = nowChat.value!.messages.find(
+          (item) => item._id === data._id
+        );
         // copy message
         let messages = nowChat.value!.messages.map((item) => {
           return {
@@ -492,196 +972,53 @@ const refreshMessage = (chat: chat, message: messages) => {
               }
               const chunk = decoder.decode(value, { stream: true });
               result += chunk;
-              if (nextAssistantMessage) {
-                nextAssistantMessage.content = result;
+              if (reference) {
+                reference.content = result;
               }
               return readStream();
             }
             return readStream();
           })
           .then((res) => {
-            nextAssistantMessage!.updated_at = new Date();
-            updateChat({
-              _id: nowChat.value!._id!,
-              messages: messages,
-            }).then((res) => {
-              const { code } = res.data.value as Response<any>;
-              if (code !== 0) {
-                window.$message.error("消息保存失败，可能会导致无法漫游");
-              } else {
-                nowChatSaveFlag.value = true;
-                getChatLists(false);
-              }
-            });
+            reference!.created_at = new Date();
+            if (nowChatSaveFlag.value) {
+              updateChat({
+                _id: nowChat.value!._id!,
+                messages: messages,
+              }).then((res) => {
+                const { code } = res.data.value as Response<any>;
+                if (code !== 0) {
+                  window.$message.error("消息保存失败，可能会导致无法漫游");
+                } else {
+                  nowChatSaveFlag.value = true;
+                  getChatLists(false);
+                }
+              });
+            } else {
+              const title = cutTitle(res!);
+              updateChat({
+                _id: nowChat.value!._id!,
+                title: title,
+                messages: messages,
+              }).then((res) => {
+                const { code } = res.data.value as Response<any>;
+                if (code !== 0) {
+                  window.$message.error("消息保存失败，可能会导致无法漫游");
+                } else {
+                  nowChatSaveFlag.value = true;
+                  nowChat.value!.title = title;
+                  getChatLists(false);
+                }
+              });
+            }
           });
       } else {
-        window.$message.error("模型启动失败");
+        window.$message.error("模型启动失败，或账号余额不足");
       }
+    })
+    .catch((err) => {
+      window.$message.error("模型启动失败，或账号余额不足");
     });
-  }
-};
-
-// sendMessages
-const promptValue = ref<string>("");
-const sendMessages = () => {
-  const value = promptValue.value;
-  if (value.trim() === "") {
-    window.$message.error("请输入内容");
-    return;
-  }
-  nowChatSaveFlag.value =
-    nowChat.value!.messages.filter((item) => item.role === "user").length > 0;
-  const newMessage = {
-    _id: uuidv4(),
-    role: "user",
-    content: value,
-    created_at: new Date(),
-    choose_flag: true,
-  } as messages;
-  nowChat.value!.messages.push(newMessage);
-  promptValue.value = "";
-  // copy message
-  const messages = nowChat.value!.messages.map((item) => {
-    return {
-      _id: item._id,
-      role: item.role,
-      content: item.content,
-      created_at: item.created_at,
-      choose_flag: item.choose_flag,
-      updated_at: item.updated_at,
-    };
-  });
-  if (nowChatSaveFlag.value) {
-    updateChat({
-      _id: nowChat.value!._id!,
-      messages: messages,
-    }).then((res) => {
-      const { code } = res.data.value as Response<any>;
-      if (code !== 0) {
-        window.$message.error("消息保存失败，可能会导致无法漫游");
-      }
-    });
-  } else {
-    insertChat({
-      type: nowChat.value!.type as "chat" | "image",
-      messages: messages,
-    }).then((res) => {
-      const { code, data } = res.data.value as Response<any>;
-      if (code === 0) {
-        nowChat.value!._id = data._id;
-        history.pushState(null, "", "/?chat=" + data._id);
-      } else {
-        window.$message.error("消息保存失败，可能会导致无法漫游");
-      }
-    });
-  }
-  getChatLists(false);
-
-  const filter = messages
-    .filter((e) => e.choose_flag)
-    .map((e) => {
-      return {
-        role: e.role,
-        content: e.content,
-      };
-    });
-  startNewModelChat({
-    name: "gpt-35-turbo",
-    messages: filter!,
-  }).then((res) => {
-    const { code, data } = res.data.value as Response<any>;
-    if (code === 0) {
-      const replyMessage = {
-        _id: data._id,
-        role: "assistant",
-        content: "正在思考中...",
-        choose: true,
-        created_at: new Date(),
-        choose_flag: true,
-      } as messages;
-      nowChat.value!.messages.push(replyMessage);
-      const reference = nowChat.value!.messages.find(
-        (item) => item._id === data._id
-      );
-      // copy message
-      let messages = nowChat.value!.messages.map((item) => {
-        return {
-          _id: item._id,
-          role: item.role,
-          content: item.content,
-          created_at: item.created_at,
-          choose_flag: item.choose_flag,
-          updated_at: item.updated_at,
-        };
-      });
-      getModelStream(data._id)
-        .then((res) => {
-          if (!res.body) return;
-          const reader = res.body.getReader();
-          const decoder = new TextDecoder("utf-8");
-          let result = "";
-
-          async function readStream(): Promise<any> {
-            const { done, value } = await reader.read();
-            if (done) {
-              messages = nowChat.value!.messages.map((item) => {
-                return {
-                  _id: item._id,
-                  role: item.role,
-                  content: item.content,
-                  created_at: item.created_at,
-                  choose_flag: item.choose_flag,
-                  updated_at: item.updated_at,
-                };
-              });
-              return result;
-            }
-            const chunk = decoder.decode(value, { stream: true });
-            result += chunk;
-            if (reference) {
-              reference.content = result;
-            }
-            return readStream();
-          }
-          return readStream();
-        })
-        .then((res) => {
-          reference!.created_at = new Date();
-          if (nowChatSaveFlag.value) {
-            updateChat({
-              _id: nowChat.value!._id!,
-              messages: messages,
-            }).then((res) => {
-              const { code } = res.data.value as Response<any>;
-              if (code !== 0) {
-                window.$message.error("消息保存失败，可能会导致无法漫游");
-              } else {
-                nowChatSaveFlag.value = true;
-                getChatLists(false);
-              }
-            });
-          } else {
-            const title = cutTitle(res!);
-            updateChat({
-              _id: nowChat.value!._id!,
-              title: title,
-              messages: messages,
-            }).then((res) => {
-              const { code } = res.data.value as Response<any>;
-              if (code !== 0) {
-                window.$message.error("消息保存失败，可能会导致无法漫游");
-              } else {
-                nowChatSaveFlag.value = true;
-                nowChat.value!.title = title;
-                getChatLists(false);
-              }
-            });
-          }
-        });
-    } else {
-      window.$message.error("模型启动失败");
-    }
-  });
 };
 
 // deleteMessage
@@ -717,10 +1054,14 @@ const getChatLists = async (needNow: boolean = true) => {
     if (code === 0) {
       // if data is array , set chatList
       if (Array.isArray(data)) {
-        data.forEach((item) => {
-          item.messages = JSON.parse(item.messages as string);
+        data.forEach((item: chat) => {
+          item.messages = JSON.parse(item.messages as unknown as string);
+          item.options = item.options
+            ? JSON.parse(item.options as unknown as string)
+            : defaultModelOptions;
         });
         chatList.value = data;
+        getWalletInfo();
         if (nowChatId && needNow) {
           const chat = data.find((e) => e._id === nowChatId);
           if (chat) {
@@ -767,12 +1108,44 @@ const deleteNowChat = (_id: string) => {
 };
 
 const startNewChat = (type: string) => {
+  if (type === "image") {
+    window.$message.error("将与GPT4一同上线，敬请期待");
+    return;
+  }
   const newChat = {
     type,
     messages: [],
     title: "New Chat",
   };
   nowChat.value = newChat;
+};
+
+// getWalletInfo
+const wallet = ref<wallet[]>([]);
+const computedWallet = computed(() => {
+  let rest = 0;
+  let total = 0;
+  wallet.value.forEach((item) => {
+    if (item.type === 0) {
+      rest += item.count;
+      total += item.count;
+    } else if (item.type === 1) {
+      rest -= item.count;
+    }
+  });
+  return {
+    rest,
+    total,
+  };
+});
+const getWalletInfo = async () => {
+  await nextTick();
+  getWallet().then((res) => {
+    const { code, data } = res.data.value as Response<any>;
+    if (code === 0) {
+      wallet.value = data;
+    }
+  });
 };
 
 onMounted(async () => {
@@ -785,6 +1158,45 @@ onMounted(async () => {
     window.$message.success("复制失败");
   });
 });
+
+// showModel
+const showModalOptions = ref(false);
+
+// addPlayRole
+const addPlayRole = (e: string) => {
+  if (!e) {
+    return;
+  }
+  // add message to nowChat.messages
+  const message = {
+    role: "system",
+    content: e,
+    created_at: new Date(),
+    updated_at: new Date(),
+    choose_flag: true,
+    _id: uuidv4(),
+  } as messages;
+  if (nowChat.value?.messages[0]?.role === "system") {
+    nowChat.value.messages[0] = message;
+  } else {
+    nowChat.value?.messages.unshift(message);
+  }
+};
+
+// updateModelOptions
+const updateModelOptions = async () => {
+  await nextTick();
+  const options = nowChat.value?.options;
+  updateChat({
+    _id: nowChat.value!._id!,
+    options: options,
+  }).then((res) => {
+    const { code } = res.data.value as Response<any>;
+    if (code !== 0) {
+      window.$message.error("消息保存失败，可能会导致无法漫游");
+    }
+  });
+};
 
 // title
 useHead({
@@ -854,7 +1266,7 @@ useHead({
   bottom: 30px;
 }
 
-.n-card:hover {
+.message-list .n-card:hover {
   cursor: pointer;
   border: 1px solid var(--n-color-target);
 }
@@ -887,9 +1299,21 @@ useHead({
   border: 1px solid #333;
 }
 
+.modal-card {
+  width: 1000px;
+  height: 780px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 @media screen and (max-width: 1000px) {
   .chat-list {
     width: 100%;
+  }
+
+  .modal-card {
+    min-height: 100vh;
   }
 }
 </style>

@@ -11,9 +11,9 @@ export default defineEventHandler(async (event) => {
       data: null,
     };
   }
-  const collection = db.collection("chat_" + _id);
+  const collection = db.collection("wallet_" + _id);
   // query chat list
-  const records = await collection.find({ del_flag: false }).toArray();
+  const records = await collection.find({ valid_flag: true }).toArray();
   res.statusCode = 200;
   return {
     code: 0,
