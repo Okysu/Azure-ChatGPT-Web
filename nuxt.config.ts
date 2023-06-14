@@ -4,15 +4,15 @@ import { NaiveUiResolver } from "unplugin-vue-components/resolvers";
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
-  nitro: {
-    preset: "vercel",
-  },
   css: ["~/assets/css/main.css"],
   app: {
     head: {
       title: "Azure ChatGPT Playground",
       link: [
-        { rel: 'stylesheet', href: 'https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.5.1/katex.min.css' }
+        {
+          rel: "stylesheet",
+          href: "https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.5.1/katex.min.css",
+        },
       ],
     },
   },

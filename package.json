@@ -2,7 +2,7 @@
   "name": "azure-chatgpt-web",
   "private": true,
   "scripts": {
-    "build": "nuxt build --dotenv .env.prod",
+    "build": "nuxt build",
     "dev": "nuxt dev --dotenv .env.dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
@@ -12,6 +12,7 @@
     "@nuxt/devtools": "latest",
     "@types/jsonwebtoken": "^9.0.2",
     "@types/node": "^18",
+    "@types/nodemailer": "^6.4.8",
     "@types/uuid": "^9.0.2",
     "naive-ui": "^2.34.4",
     "nuxt": "^3.5.2"
@@ -23,7 +24,6 @@
     "@pinia-plugin-persistedstate/nuxt": "^1.1.1",
     "@pinia/nuxt": "^0.4.11",
     "@vicons/ionicons5": "^0.12.0",
-    "axios": "^1.4.0",
     "clipboard": "^2.0.11",
     "dotenv": "^16.1.4",
     "gpt-3-encoder": "^1.1.4",
