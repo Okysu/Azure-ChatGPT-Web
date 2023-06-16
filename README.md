@@ -45,6 +45,7 @@ Because Nuxt3 cannot use environment variable files in the Deployment environmen
 由于Nuxt3在Deployment环境下无法使用环境变量文件，因此启动之前需要手动设置环境变量。
 
 ```bash
+export SITE_URL='https://example.com'
 export MONGODB_URI='mongodb://localhost:27017/azure'
 export MONGODB_USERNAME='azure'
 export MONGODB_PASSWORD='************'

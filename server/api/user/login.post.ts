@@ -4,6 +4,7 @@
  */
 
 import { sha256 } from "js-sha256";
+import { sendRegisterEmail } from "../../utils/smtp";
 
 /* login.post.ts */
 export default defineEventHandler(async (event) => {
@@ -60,9 +61,16 @@ export default defineEventHandler(async (event) => {
       inviteCode: inviteCode,
     };
 
-    // TODO: register user
+    // register user
+    const token = generateRegisterToken(insert_user);
 
-    return insert_user;
+    sendRegisterEmail(email, token);
+
+    return {
+      code: 1,
+      msg: "send email success.",
+      data: null,
+    };
   }
 
   const passwordMatch =

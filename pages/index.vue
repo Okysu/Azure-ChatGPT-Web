@@ -76,7 +76,8 @@
           <n-thing>
             <template #avatar>
               <n-avatar
-                :src="user.avatar || 'https://source.yby.zone/avatar.jpg'"
+                @click="goToInfoPage('info')"
+                :src="user.avatar"
                 size="medium"
               />
             </template>
@@ -84,7 +85,13 @@
               <span class="nickname">{{ user.username }}</span>
             </template>
             <template #header-extra>
-              <n-button strong secondary circle size="small">
+              <n-button
+                @click="goToInfoPage('system')"
+                strong
+                secondary
+                circle
+                size="small"
+              >
                 <n-icon>
                   <SettingsOutline />
                 </n-icon>
@@ -104,7 +111,7 @@
                   "
                 >
                   <n-a @click="getWalletInfo">刷新</n-a>
-                  <n-a>详情</n-a>
+                  <n-a @click="goToInfoPage('wallet')">详情</n-a>
                 </div>
               </div>
               <n-progress
@@ -299,12 +306,7 @@
           v-if="nowChat !== null"
           class="fixed-bottom"
           bordered
-          style="
-            min-height: 120px;
-            position: absolute;
-            width: 100%;
-            background-color: white;
-          "
+          style="min-height: 120px; position: absolute; width: 100%"
         >
           <n-button-group size="small" style="margin-bottom: 10px">
           </n-button-group>
@@ -565,6 +567,100 @@
         </template>
       </n-card>
     </n-modal>
+    <n-modal v-model:show="showSettinglOptions">
+      <n-card
+        class="modal-card"
+        title="应用设置"
+        :bordered="false"
+        size="huge"
+        role="dialog"
+        aria-modal="true"
+      >
+        <template #header-extra>
+          <n-button
+            circle
+            strong
+            secondary
+            @click="showSettinglOptions = false"
+          >
+            <n-icon>
+              <CloseOutline />
+            </n-icon>
+          </n-button>
+        </template>
+        <n-tabs v-model:value="settingTabsValue" type="line" animated>
+          <n-tab-pane tab="个人信息" name="info">
+            <div
+              style="
+                display: flex;
+                justify-content: center;
+                align-items: center;
+              "
+            >
+              <n-avatar :src="user.avatar" round :size="100" />
+            </div>
+            <div style="text-align: center; margin-top: 10px">
+              <n-text>{{ user.username }}</n-text>
+            </div>
+            <n-form-item label="用户头像">
+              <n-input
+                v-model:value="user.avatar"
+                placeholder="输入Q+你的QQ号将自动获取你的QQ头像，或者自行使用网络图片。"
+                @blur="onAvatarChange"
+              />
+            </n-form-item>
+            <n-form-item label="用户昵称">
+              <n-input
+                v-model:value="user.username"
+                placeholder="输入你的昵称"
+              />
+            </n-form-item>
+            <n-space>
+              <n-button size="small" secondary strong @click="update">
+                保存
+              </n-button>
+              <n-button
+                size="small"
+                secondary
+                strong
+                type="error"
+                @click="logout"
+              >
+                退出登录
+              </n-button>
+            </n-space>
+          </n-tab-pane>
+          <n-tab-pane tab="余额管理" name="wallet">
+            <n-grid :cols="3">
+              <n-gi>
+                <n-statistic label="倍率" :value="user.expense_base" />
+              </n-gi>
+              <n-gi>
+                <n-statistic label="拥有" :value="computedWallet.total" />
+              </n-gi>
+              <n-gi>
+                <n-statistic label="剩余" :value="computedWallet.rest" />
+              </n-gi>
+            </n-grid>
+            <n-space>
+              <n-button @click="walletPush"> 卡密充值 </n-button>
+            </n-space>
+            <n-data-table
+              :data="wallet"
+              :columns="columns"
+              style="margin-top: 10px"
+              :pagination="pagination"
+              max-height="calc(100vh - 500px)"
+            />
+          </n-tab-pane>
+          <n-tab-pane tab="系统设置" name="system">
+            <n-form-item label="主题配色">
+              <n-select v-model:value="theme" :options="themeOptions" />
+            </n-form-item>
+          </n-tab-pane>
+        </n-tabs>
+      </n-card>
+    </n-modal>
   </div>
 </template>
 
@@ -573,7 +669,6 @@
 import { useAppConfig } from "~/stores/appConfig";
 import { useUserConfig } from "~/stores/userConfig";
 import { storeToRefs } from "pinia";
-import { FormInst, FormItemRule } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
 import {
   Response,
@@ -584,6 +679,9 @@ import {
   startNewModelChat,
   getModelStream,
   getWallet,
+  pushWallet,
+  updateUser,
+  logout as userlogout,
 } from "~/request";
 
 // markdown
@@ -611,12 +709,13 @@ import {
 
 // route
 const route = useRoute();
+const router = useRouter();
 const nowChatId = route.query.chat;
 
 // refs reactive
 const appConfig = useAppConfig();
 const userConfig = useUserConfig();
-const { collapsed } = storeToRefs(appConfig);
+const { collapsed, theme } = storeToRefs(appConfig);
 const { user } = storeToRefs(userConfig);
 
 const color = randomColor();
@@ -651,6 +750,7 @@ const nowChatSaveFlag = ref<boolean>(false);
 const changeNowChat = (chat: chat) => {
   nowChat.value = chat;
   nowChatSaveFlag.value = true;
+  nowChat.value.options = nowChat.value.options || defaultModelOptions;
   history.pushState(null, "", "/?chat=" + chat._id);
 };
 
@@ -1143,6 +1243,12 @@ const getWalletInfo = async () => {
   getWallet().then((res) => {
     const { code, data } = res.data.value as Response<any>;
     if (code === 0) {
+      // order by time
+      data.sort((a: wallet, b: wallet) => {
+        return (
+          new Date(b.created_at!).getTime() - new Date(a.created_at!).getTime()
+        );
+      });
       wallet.value = data;
     }
   });
@@ -1198,6 +1304,130 @@ const updateModelOptions = async () => {
   });
 };
 
+// goToInfoPage
+const goToInfoPage = (query?: string) => {
+  showSettinglOptions.value = true;
+  settingTabsValue.value = query || "info";
+};
+
+// showSettinglOptions
+const showSettinglOptions = ref(false);
+const settingTabsValue = ref("info");
+
+onMounted(async () => {
+  getWalletInfo();
+});
+
+const logout = () => {
+  window.$dialog.warning({
+    title: "退出登录",
+    content: "确定要退出登录吗？",
+    positiveText: "确定",
+    negativeText: "取消",
+    transformOrigin: "center",
+    onPositiveClick: async () => {
+      await userlogout();
+      userConfig.logout();
+      router.push("/login");
+    },
+  });
+};
+
+const update = () => {
+  updateUser({
+    avatar: user.value.avatar,
+    username: user.value.username,
+  }).then((res) => {
+    const { code } = res.data.value as Response<any>;
+    if (code === 0) {
+      window.$message.success("修改成功");
+    } else {
+      window.$message.error("修改失败");
+    }
+  });
+};
+
+const walletPush = () => {
+  const key = prompt("请输入充值密钥");
+  if (key) {
+    window.$dialog.warning({
+      title: "充值卡密",
+      content: "确定充值本卡密吗？",
+      positiveText: "确定",
+      negativeText: "取消",
+      transformOrigin: "center",
+      onPositiveClick: async () => {
+        pushWallet({ key }).then((res) => {
+          const { code } = res.data.value as Response<any>;
+          if (code === 0) {
+            window.$message.success("充值成功");
+            getWalletInfo();
+          } else {
+            window.$message.error("充值失败");
+          }
+        });
+      },
+    });
+  }
+};
+
+const columns = [
+  {
+    title: "消费内容",
+    key: "title",
+  },
+  {
+    title: "消费类型",
+    key: "type",
+    render: (row: wallet) => {
+      return h("span", {}, row.type === 1 ? "花费" : "充值");
+    },
+  },
+  {
+    title: "数量",
+    key: "count",
+    render: (row: wallet) => {
+      return h("span", {}, row.type === 1 ? `-${row.count}` : `+${row.count}`);
+    },
+  },
+  {
+    title: "时间",
+    key: "time",
+    render: (row: wallet) => {
+      return h("span", {}, new Date(row.created_at!).toLocaleString());
+    },
+  },
+];
+
+const onAvatarChange = () => {
+  const avatar = user.value.avatar;
+  if (avatar.startsWith("Q")) {
+    user.value.avatar = `https://q1.qlogo.cn/g?b=qq&nk=${avatar.slice(
+      1
+    )}&s=100`;
+  }
+};
+
+const pagination = reactive({
+  page: 1,
+  pageSize: 10,
+  showSizePicker: true,
+  pageSizes: [10, 15, 20, 25, 30, 35, 40, 45, 50, 100],
+  onChange: (page: number) => {
+    pagination.page = page;
+  },
+  onUpdatePageSize: (pageSize: number) => {
+    pagination.pageSize = pageSize;
+    pagination.page = 1;
+  },
+});
+
+const themeOptions = [
+  { label: "系统", value: "auto" },
+  { label: "亮色", value: "light" },
+  { label: "暗色", value: "dark" },
+];
+
 // title
 useHead({
   titleTemplate: "Playground - %s",
@@ -1230,7 +1460,6 @@ useHead({
   width: 120px;
   font-size: 16px;
   font-weight: bold;
-  color: #000000;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

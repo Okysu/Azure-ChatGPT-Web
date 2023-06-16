@@ -4,8 +4,6 @@ import hljs from "highlight.js";
 import katex from "markdown-it-katex";
 export const md = markdownit({
   html: true,
-  linkify: true,
-  typographer: true,
   breaks: true,
   highlight: function (str: string, lang: string): string {
     const uuid = uuidv4();

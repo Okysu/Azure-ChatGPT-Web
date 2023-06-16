@@ -13,4 +13,13 @@ export const login = (data: loginOptions) => {
 
 export const logout = () => {
   return request.post("/api/user/logout");
+};
+
+interface updateOptions {
+  username: string;
+  avatar: string;
 }
+
+export const updateUser = (data: updateOptions) => {
+  return request.put("/api/user/update", data);
+};

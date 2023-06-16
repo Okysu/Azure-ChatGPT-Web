@@ -1,7 +1,7 @@
 import { RedisClientType, createClient } from "redis";
 
 const client = {
-  connection: null as any
+  connection: null as any,
 };
 
 const url = process.env.REDIS_URL;
@@ -95,7 +95,7 @@ async function set(
  * @throws {Error}
  */
 async function get(key: string): Promise<string | null> {
-  return (await  client.connection?.get(key)) ?? null;
+  return (await client.connection?.get(key)) ?? null;
 }
 
 /**

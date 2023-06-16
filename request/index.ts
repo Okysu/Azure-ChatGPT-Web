@@ -111,7 +111,7 @@ export const token = (): string => {
   return userConfig.token;
 };
 
-export { login, logout } from "./user";
+export { login, logout,updateUser } from "./user";
 export { getChatList, insertChat, deleteChat, updateChat } from "./chat";
 export { startNewModelChat, getModelStream } from "./model";
-export { getWallet } from "./wallet";
+export { getWallet,pushWallet } from "./wallet";
