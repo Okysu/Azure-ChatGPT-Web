@@ -106,9 +106,7 @@ Handle messages as follows:
       if (!msg) {
         break;
       }
-      if (msg.role !== "system") {
-        count -= encode(msg.content).length;
-      }
+      count -= encode(msg.content).length;
       index++;
     }
     // if count > 4000, return error
