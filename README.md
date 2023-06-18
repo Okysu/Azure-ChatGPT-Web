@@ -6,9 +6,11 @@ A ChatGPT web page compatible with Azure OpenAI Key, built using Nuxt3.
 
 # Note 注意
 
-This project is currently **under development** and is not yet available.
+The basic part of the project has been developed, and the backend management part is under development.
 
-本项目目前**正在开发**，尚未可用。
+本项目目前基础部分已开发完毕，正在开发后台管理部分。
+
+DEMO: https://chat.ecanse.com
 
 ![DEMO](https://source.yby.zone/azure-gpt-login.png)
 ![DEMO](https://source.yby.zone/azure-gpt-home.png)
@@ -73,3 +75,60 @@ First, create a copy of the `.env.prod` file named `.env.dev`, and fill it in wi
 首先，创建一个`.env.prod`文件的副本，命名为`.env.dev`，并填写相关信息。
 
 Run `pnpm run dev`.
+
+## Messages Back 消息回传
+
+This system allows users to return messages as much as possible. In the backend, we will continue to trim to ensure that no more than 4000 tokens are used. The reason why automatic summarization is not used is because this will cause the model to not accurately understand the user's intentions.
+
+本系统允许用户仅可能多的回传消息，在后端我们会不断进行裁剪保证不超过4000个Token，没有采用自动总结的方式是因为这样会导致模型无法准确地了解用户的意图。
+
+Handle messages as follows:
+消息处理如下：
+```typescript
+  // count the number of tokens
+  // 计算token数量
+  let count = 0;
+  messages.forEach((item: message) => {
+    count += encode(item.content).length;
+  });
+
+  if (count > 4000 && messages.length > 1) {
+    // save all messages that its role is system, and remove others
+    // 保存所有role为system的消息，删除其他消息
+    let count = 0;
+    let index = 0;
+    while (
+      (count > 4000 ||
+        (messages[index] && messages[index].role !== "system")) &&
+      index < messages.length
+    ) {
+      const msg = messages.shift();
+      if (!msg) {
+        break;
+      }
+      if (msg.role !== "system") {
+        count -= encode(msg.content).length;
+      }
+      index++;
+    }
+    // if count > 4000, return error
+    // 如果count > 4000，返回错误
+    if (count > 4000) {
+      res.statusCode = 400;
+      return {
+        code: -1,
+        msg: "messages too long.",
+        data: null,
+      };
+    }
+  } else if (count > 4000 && messages.length === 1) {
+    // return error
+    // 返回错误
+    res.statusCode = 400;
+    return {
+      code: -1,
+      msg: "messages too long.",
+      data: null,
+    };
+  }
+```

@@ -69,7 +69,7 @@ export default defineEventHandler(async (event) => {
   wallerCollection.insertOne({
     type: 0,
     title: "新用户注册赠送",
-    count: 10000,
+    count: 20000,
     valid_flag: true,
     created_at: new Date(),
     updated_at: new Date(),
